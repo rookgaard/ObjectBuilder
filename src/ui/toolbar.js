@@ -2,12 +2,14 @@
 
 import { STRINGS } from "./strings.js";
 import { loadReferenceProject } from "../app/loadProject.js";
+import { compileAndDownload } from "../app/compileProject.js";
 import {
     canUndo,
     canRedo,
     undo,
     redo,
     onUndoChange,
+    getState,
 } from "../store/index.js";
 
 const $ = window.jQuery;
@@ -64,6 +66,26 @@ export function renderToolbar($host) {
 function runToolbarCommand(cmd, $btn) {
     if (cmd === "toolbar.undo") { if (canUndo()) undo(); return; }
     if (cmd === "toolbar.redo") { if (canRedo()) redo(); return; }
+
+    if (cmd === "toolbar.compile") {
+        if (!getState().project) {
+            console.warn("[toolbar] compile: no project loaded");
+            return;
+        }
+        const $status = $(".app-status");
+        $btn.prop("disabled", true);
+        $status.text("Compiling .dat + .spr…");
+        try {
+            const out = compileAndDownload();
+            $status.text(`Compiled — dat ${out.datBytes.length} B, spr ${out.sprBytes.length} B (downloads triggered).`);
+        } catch (err) {
+            console.error("[toolbar] compile failed", err);
+            $status.text(`Compile failed: ${err.message}`);
+        } finally {
+            $btn.prop("disabled", false);
+        }
+        return;
+    }
 
     if (cmd === "toolbar.loadRef") {
         const $status = $(".app-status");

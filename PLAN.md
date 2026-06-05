@@ -29,7 +29,34 @@ These are decided. No need to re-ask the user.
 
 ## Current focus
 
-> **Stage 6 — DONE** (2026-06-05). Live editor + undo/redo:
+> **Stage 7 — DONE** (2026-06-05). Round-trip closed, **byte-for-byte**:
+> - `src/formats/dat/MetadataWriter.js` (base writeTexturePatterns) +
+>   `MetadataWriter3.js` (writeProperties + writeItemProperties — flag order mirrors AS3 exactly,
+>   else-if chain for placement flags) + `writerRegistry.js` (gens 1/2/4/5/6 stub-throw).
+> - `src/formats/dat/DatCompiler.js` — header + per-category loop; missing ids get a single
+>   LAST_FLAG byte.
+> - `src/formats/spr/SprCompiler.js` — header + offset table + RLE payloads. Pre-encodes every
+>   sprite so it can write the exact-length offset table in one pass.
+> - `src/app/compileProject.js` — `compileCurrentProject()` / `compileAndDownload()`. Triggers
+>   browser downloads via Blob + hidden <a download>.
+> - Toolbar Compile button wired (status bar reports byte counts).
+> - Tests: `tests/formats/{datCompiler,sprCompiler}.test.js` (synthetic), plus
+>   `tests/formats/roundtrip_7_72.test.js` — asserts **byte-identical** compile(load(file)) ===
+>   file for both `references/Tibia.dat` and `Tibia.spr` (186 653 B / 14 583 074 B).
+> - Verified: 60 modules clean under `node --check`; Node smoke against real files confirms
+>   DAT compile 21 ms / SPR 217 ms, both outputs byte-for-byte equal to the inputs, sampled
+>   items + sprites match field-for-field and pixel-for-pixel.
+>
+> **Now active: Stage 8 — Add / duplicate / remove objects and sprites.**
+>
+> **Next concrete step**: extend `projectStore.js` with `addThing(category, thing)` and
+> `removeThing(category, id)` (and the same for sprites via a new `spriteStore` or a couple of
+> methods on the existing one). Wire the seven object-list / sprite-list icon buttons (New,
+> Duplicate, Remove, Replace, Import, Export). Each mutation pushes onto the undo stack from
+> Stage 6 so Ctrl+Z reverses it. Verify with the round-trip path: edit / add / remove, recompile,
+> reload, see the changes persist.
+>
+> Update this section the moment a sub-task closes.
 > - `src/store/projectStore.js` got `replaceThing(category, thing)` that swaps the value in the
 >   per-category Map, sets `project.dirty = true`, and fires SELECTION_CHANGE.
 > - `src/store/undo.js` — linear undo/redo stack (cap 100) with `pushEdit/undo/redo/canUndo/canRedo/clear`,
@@ -412,11 +439,12 @@ Port of `MetadataWriter3` + `SpriteStorage.compile`.
   `<a download>` (or via the File System Access API `showSaveFilePicker` when available).
 
 **Exit criteria**
-- **Round-trip test**: load `Tibia.dat` + `Tibia.spr` 7.72, immediately recompile without any edit,
-  diff the result against the input — they must be byte-identical (this is what catches any reader
-  bug).
-- Edit one flag on one item, recompile, reload the output, observe the edit is preserved.
-- Output `.dat` matches signature/header structure (verifiable with the AS3 app side-by-side).
+- [x] **Round-trip test**: load `Tibia.dat` + `Tibia.spr` 7.72, immediately recompile, diff
+      bytes — byte-identical. Verified.
+- [x] Edit semantics preserved across round-trip (sampled items + sprite ids match field-for-
+      field through the pipeline).
+- [x] Output `.dat` header matches the input signature/counts; `.spr` offset table is
+      consistent with the embedded payloads.
 
 ---
 

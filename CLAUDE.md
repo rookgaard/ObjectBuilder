@@ -264,8 +264,9 @@ signatures (user calls them 7.72) so the version dropdown shows what the user ex
 - [x] Stage 5 — Live preview: SpriteSheet composer + Animator + ThingDataView widget + pattern
       controls in the preview panel.
 - [x] Stage 6 — Editor edits flags/properties/texture, Save/Close + undo stack + Ctrl+Z/Ctrl+Y.
-- [ ] Stage 7 — Re-compile `.dat` + `.spr` and download (close the byte-for-byte round-trip).
-- [ ] Stage 8 — Add / duplicate / remove objects + sprites.
+- [x] Stage 7 — DAT + SPR compilers + Compile toolbar button + byte-identical round-trip
+      against `references/Tibia.{dat,spr}` (186 KB / 14 MB).
+- [ ] Stage 8 — Add / duplicate / remove objects + sprites (wire the icon buttons + undo).
 - [ ] Stage 9 — OBD single-object import/export.
 - [ ] Stage 10 — Support more version generations (7.10–7.50, 7.80+).
 - [ ] Stage 11 — Helper tools (Find, Slicer, Animation Editor, Look Generator).
