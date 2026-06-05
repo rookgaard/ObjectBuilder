@@ -29,6 +29,25 @@ These are decided. No need to re-ask the user.
 
 ## Current focus
 
+> **Stage 12 — DONE** (2026-06-05). Polish + persistence (final stretch):
+> - `src/app/persistence.js` — tiny localStorage wrapper with defaults + clamping.
+> - Panel widths persist across reloads via splitter `mouseup` → `setPanelWidth`.
+> - Selected category persists; restored on boot.
+> - File menu Close prompts "Discard changes?" when the project is dirty.
+> - `window.beforeunload` warns the user when there are unsaved edits.
+> - Keyboard shortcuts: Ctrl+N (new), Ctrl+O (open), Ctrl+S (compile + download),
+>   Ctrl+Z / Ctrl+Y (undo / redo) — already wired earlier, refined here.
+> - Verified: 84 modules clean under `node --check`; 7.72 round-trip still byte-identical.
+>
+> **App is feature-complete for the user's stated scope** — load + browse + edit + compile real
+> 7.72 files, all six DAT generations supported, helper tools (Find + Slicer). Two follow-up
+> items remain documented but deferred:
+>   1. **OBD single-object import/export** — would need an LZMA codec (no browser-native LZMA).
+>   2. **Animation Editor + Look Generator** — cosmetic, not blocking.
+>
+> Both can be picked up later as Stage 13 / 14 if the owner asks.
+>
+> --- Stage 11 history (kept for reference) ---
 > **Stage 11 — DONE** (2026-06-05). Helper tools — Find + Slicer:
 > - `src/ui/tools/findDialog.js` — Tools → Find. Category dropdown + ID range + 30+ boolean
 >   filters (any/true/false) + 12 numeric filters (min/max). Walks the storage Map; results list
@@ -38,13 +57,6 @@ These are decided. No need to re-ask the user.
 >   each as a new sprite via the SprFile overlay and undo stack.
 > - Wired in `src/ui/menu.js` Tools → Find / Slicer; toolbar 🔍 button also opens Find.
 > - Verified: 83 modules clean under `node --check`.
->
-> **Now active: Stage 12 — Polish + persistence (final stretch).**
->
-> **Next concrete step**: localStorage for last selected category + panel widths + dark theme
-> setting (no-op for now since we ship dark only). A confirm-before-close-with-unsaved-changes
-> prompt in the editor. Keyboard shortcuts list (Ctrl+O / Ctrl+S / Ctrl+N). Optional OPFS for
-> caching a loaded project across reloads (out of scope if it bloats).
 >
 > --- Stage 10 history (kept for reference) ---
 > **Stage 10 — DONE** (2026-06-05). All six DAT generations now port-complete:

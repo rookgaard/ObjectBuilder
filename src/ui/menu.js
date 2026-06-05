@@ -64,10 +64,28 @@ async function doCompileAs() {
     } catch (err) { console.error("[menu] compileAs failed", err); reportStatus(`Compile As failed: ${err.message}`); }
 }
 
-function doClose() {
-    if (!getState().project) { reportStatus("No project loaded."); return; }
+async function doClose() {
+    const project = getState().project;
+    if (!project) { reportStatus("No project loaded."); return; }
+    if (project.dirty) {
+        const ok = await confirmDiscard("There are unsaved edits. Close and discard them?");
+        if (!ok) return;
+    }
     setProject(null);
     reportStatus("Project closed.");
+}
+
+async function confirmDiscard(message) {
+    const { showModal } = await import("./widgets/modal.js");
+    const action = await showModal({
+        title: "Discard changes?",
+        body: $(`<p>${message}</p>`),
+        buttons: [
+            { label: "Cancel",  value: null },
+            { label: "Discard", value: "ok", primary: true },
+        ],
+    });
+    return action === "ok";
 }
 
 function syncViewItem(commandId, panelId) {

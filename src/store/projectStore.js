@@ -2,16 +2,18 @@
 // (UI panels, menu, toolbar) listen via a jQuery-based event bus so the store
 // itself stays framework-agnostic.
 
-import { ITEM } from "../core/things/ThingCategory.js";
+import { ITEM, isValid as isValidCategory } from "../core/things/ThingCategory.js";
 import { ThingType } from "../core/things/ThingType.js";
+import { get as getPersisted, set as setPersisted } from "../app/persistence.js";
 
 const $ = window.jQuery;
 const bus = $({}); // jQuery's "anything is an event emitter if you wrap it"
 
+const persistedCat = getPersisted("selectedCategory");
 const state = {
     /** @type {?LoadedProject} */
     project: null,
-    selectedCategory: ITEM,
+    selectedCategory: isValidCategory(persistedCat) ? persistedCat : ITEM,
     selectedThingId:  null,
     selectedSpriteId: 1,
 };
@@ -51,6 +53,7 @@ export function setSelectedCategory(category) {
     if (state.selectedCategory === category) return;
     state.selectedCategory = category;
     state.selectedThingId  = minIdFor(category);
+    setPersisted("selectedCategory", category);
     bus.trigger(EVENTS.SELECTION_CHANGE, [state]);
 }
 

@@ -12,8 +12,12 @@ import {
     redo,
     canUndo,
     canRedo,
+    getState,
 } from "../store/index.js";
 import { applyUndoEntry } from "../ui/panels/editorPanel.js";
+import { showOpenDialog } from "../ui/dialogs/openDialog.js";
+import { showNewDialog }  from "../ui/dialogs/newDialog.js";
+import { compileAndDownload } from "./compileProject.js";
 
 const $ = window.jQuery;
 if (!$) {
@@ -55,14 +59,37 @@ function bindKeyboardShortcuts() {
         if (!isMod) return;
 
         const key = e.key.toLowerCase();
-        // Ignore when focus is on a free-text input (numeric inputs treat
-        // ctrl+z natively as input undo; let the browser handle it).
-        if (e.target instanceof HTMLInputElement && e.target.type !== "checkbox") return;
+        const isTextField = (e.target instanceof HTMLInputElement && e.target.type !== "checkbox")
+                         || (e.target instanceof HTMLTextAreaElement);
 
-        if (key === "z" && !e.shiftKey) {
+        // Undo / redo
+        if (key === "z" && !e.shiftKey && !isTextField) {
             if (canUndo()) { e.preventDefault(); undo(); }
-        } else if ((key === "y") || (key === "z" && e.shiftKey)) {
+            return;
+        }
+        if ((key === "y" || (key === "z" && e.shiftKey)) && !isTextField) {
             if (canRedo()) { e.preventDefault(); redo(); }
+            return;
+        }
+        if (isTextField) return;
+
+        if (key === "o") { e.preventDefault(); showOpenDialog().catch(console.error); return; }
+        if (key === "n") { e.preventDefault(); showNewDialog().catch(console.error); return; }
+        if (key === "s") {
+            e.preventDefault();
+            if (getState().project) {
+                try { compileAndDownload(); } catch (err) { console.error(err); }
+            }
+            return;
+        }
+    });
+
+    // Warn before close if there are unsaved changes.
+    window.addEventListener("beforeunload", (e) => {
+        const project = getState().project;
+        if (project?.dirty) {
+            e.preventDefault();
+            e.returnValue = "";
         }
     });
 }

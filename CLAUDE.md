@@ -271,8 +271,10 @@ signatures (user calls them 7.72) so the version dropdown shows what the user ex
 - [x] Stage 9 — File menu wiring: Open / New / Compile / Compile As / Close dialogs.
 - [x] Stage 10 — All six DAT generations ported (1/2/3/4/5/6 readers + writers + registries).
 - [x] Stage 11 — Helper tools: Find dialog + Slicer dialog wired into the Tools menu.
-- [ ] Stage 12 — Persistence (OPFS / localStorage) + polish (save? prompt, theme toggle).
-- [ ] Stage 13 — Polish (keyboard shortcuts, a11y, theming).
+- [x] Stage 12 — Polish + persistence: localStorage for panel widths + selected category;
+      "Discard changes?" prompt; `beforeunload` warning; Ctrl+N / Ctrl+O / Ctrl+S shortcuts.
+- [ ] Optional follow-ups: OBD single-object import/export (needs LZMA dep); Animation Editor;
+      Look Generator (outfit colour preview); SpritesOptimizer; theme toggle / a11y deep dive.
 
 Detailed roadmap & resume points: see [PLAN.md](./PLAN.md).
 

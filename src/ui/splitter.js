@@ -1,3 +1,5 @@
+import { setPanelWidth } from "../app/persistence.js";
+
 // Drag-to-resize splitter. Each splitter element resizes one target panel.
 //
 // Markup contract — for each splitter you want active:
@@ -35,19 +37,21 @@ export function initSplitters(rootSelector = "#app-layout") {
 
         $("body").addClass("is-splitter-dragging");
 
+        let lastClamped = startWidth;
         function onMove(moveEvent) {
             const delta = moveEvent.pageX - startX;
             const next = edge === "right"
                 ? startWidth + delta
                 : startWidth - delta;
-            const clamped = Math.max(min, Math.min(max, next));
-            $target.css("flex-basis", clamped + "px");
+            lastClamped = Math.max(min, Math.min(max, next));
+            $target.css("flex-basis", lastClamped + "px");
         }
 
         function onUp() {
             $(document).off("mousemove.splitter", onMove);
             $(document).off("mouseup.splitter", onUp);
             $("body").removeClass("is-splitter-dragging");
+            setPanelWidth(targetId, lastClamped);
         }
 
         $(document).on("mousemove.splitter", onMove);
