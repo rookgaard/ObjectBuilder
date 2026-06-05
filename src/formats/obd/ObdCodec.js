@@ -194,8 +194,8 @@ function readProperties(reader, thing) {
             case F.STACKABLE: thing.stackable = true; break;
             case F.FORCE_USE: thing.forceUse = true; break;
             case F.MULTI_USE: thing.multiUse = true; break;
-            case F.WRITABLE: thing.writable = true; thing.maxTextLength = reader.readUint16(); break;
-            case F.WRITABLE_ONCE: thing.writableOnce = true; thing.maxTextLength = reader.readUint16(); break;
+            case F.WRITABLE: thing.writable = true; thing.maxReadWriteChars = reader.readUint16(); break;
+            case F.WRITABLE_ONCE: thing.writableOnce = true; thing.maxReadChars = reader.readUint16(); break;
             case F.FLUID_CONTAINER: thing.isFluidContainer = true; break;
             case F.FLUID: thing.isFluid = true; break;
             case F.UNPASSABLE: thing.isUnpassable = true; break;
@@ -211,7 +211,7 @@ function readProperties(reader, thing) {
             case F.HAS_LIGHT: thing.hasLight = true; thing.lightLevel = reader.readUint16(); thing.lightColor = reader.readUint16(); break;
             case F.DONT_HIDE: thing.dontHide = true; break;
             case F.TRANSLUCENT: thing.isTranslucent = true; break;
-            case F.HAS_OFFSET: thing.hasOffset = true; thing.offsetX = reader.readUint16(); thing.offsetY = reader.readUint16(); break;
+            case F.HAS_OFFSET: thing.hasOffset = true; thing.offsetX = reader.readInt16(); thing.offsetY = reader.readInt16(); break;
             case F.HAS_ELEVATION: thing.hasElevation = true; thing.elevation = reader.readUint16(); break;
             case F.LYING_OBJECT: thing.isLyingObject = true; break;
             case F.ANIMATE_ALWAYS: thing.animateAlways = true; break;
@@ -248,8 +248,8 @@ function writeProperties(w, thing) {
     if (thing.stackable) w.writeUint8(F.STACKABLE);
     if (thing.forceUse) w.writeUint8(F.FORCE_USE);
     if (thing.multiUse) w.writeUint8(F.MULTI_USE);
-    if (thing.writable) { w.writeUint8(F.WRITABLE); w.writeUint16(thing.maxTextLength); }
-    if (thing.writableOnce) { w.writeUint8(F.WRITABLE_ONCE); w.writeUint16(thing.maxTextLength); }
+    if (thing.writable) { w.writeUint8(F.WRITABLE); w.writeUint16(thing.maxReadWriteChars); }
+    if (thing.writableOnce) { w.writeUint8(F.WRITABLE_ONCE); w.writeUint16(thing.maxReadChars); }
     if (thing.isFluidContainer) w.writeUint8(F.FLUID_CONTAINER);
     if (thing.isFluid) w.writeUint8(F.FLUID);
     if (thing.isUnpassable) w.writeUint8(F.UNPASSABLE);
@@ -265,7 +265,7 @@ function writeProperties(w, thing) {
     if (thing.hasLight) { w.writeUint8(F.HAS_LIGHT); w.writeUint16(thing.lightLevel); w.writeUint16(thing.lightColor); }
     if (thing.dontHide) w.writeUint8(F.DONT_HIDE);
     if (thing.isTranslucent) w.writeUint8(F.TRANSLUCENT);
-    if (thing.hasOffset) { w.writeUint8(F.HAS_OFFSET); w.writeUint16(thing.offsetX); w.writeUint16(thing.offsetY); }
+    if (thing.hasOffset) { w.writeUint8(F.HAS_OFFSET); w.writeInt16(thing.offsetX); w.writeInt16(thing.offsetY); }
     if (thing.hasElevation) { w.writeUint8(F.HAS_ELEVATION); w.writeUint16(thing.elevation); }
     if (thing.isLyingObject) w.writeUint8(F.LYING_OBJECT);
     if (thing.animateAlways) w.writeUint8(F.ANIMATE_ALWAYS);

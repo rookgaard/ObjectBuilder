@@ -47,7 +47,7 @@ function makeThing() {
     thing.stackable = true;
     thing.forceUse = true;
     thing.writable = true;
-    thing.maxTextLength = 64;
+    thing.maxReadWriteChars = 64;
     thing.blockPathfind = true;
     thing.hasLight = true;
     thing.lightLevel = 7;
@@ -123,7 +123,7 @@ describe("OBD 2.0 codec", () => {
         assertEqual(thing.stackable, true);
         assertEqual(thing.forceUse, true);
         assertEqual(thing.writable, true);
-        assertEqual(thing.maxTextLength, 64);
+        assertEqual(thing.maxReadWriteChars, 64);
         assertEqual(thing.blockPathfind, true);
         assertEqual(thing.hasLight, true);
         assertEqual(thing.lightColor, 215);

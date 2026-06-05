@@ -31,8 +31,8 @@ const PROPERTY_GROUPS = [
       nums:  [{ id: "prop-lightLevel", field: "lightLevel",   label: "Light level", min: 0, max: 15 },
               { id: "prop-lightColor", field: "lightColor",   label: "Light color", min: 0, max: 255 }] },
     { check: { id: "prop-hasOffset",    field: "hasOffset",    label: "Has offset" },
-      nums:  [{ id: "prop-offsetX", field: "offsetX", label: "Offset X", min: 0, max: 64 },
-              { id: "prop-offsetY", field: "offsetY", label: "Offset Y", min: 0, max: 64 }] },
+      nums:  [{ id: "prop-offsetX", field: "offsetX", label: "Offset X", min: -32768, max: 32767 },
+              { id: "prop-offsetY", field: "offsetY", label: "Offset Y", min: -32768, max: 32767 }] },
     { check: { id: "prop-hasElevation", field: "hasElevation", label: "Has elevation" },
       nums:  [{ id: "prop-elevation",  field: "elevation",   label: "Elevation", min: 0, max: 64 }] },
     { check: { id: "prop-miniMap",      field: "miniMap",      label: "Mini-map" },
@@ -40,9 +40,9 @@ const PROPERTY_GROUPS = [
     { check: { id: "prop-isLensHelp",   field: "isLensHelp",   label: "Lens help" },
       nums:  [{ id: "prop-lensHelp",   field: "lensHelp",    label: "Lens help value", min: 0, max: 65535 }] },
     { check: { id: "prop-writable",     field: "writable",     label: "Writable" },
-      nums:  [{ id: "prop-maxTextLen",  field: "maxTextLength", label: "Max text length", min: 0, max: 65535 }] },
+      nums:  [{ id: "prop-maxRWChars",  field: "maxReadWriteChars", label: "Max read/write chars", min: 0, max: 65535 }] },
     { check: { id: "prop-writableOnce", field: "writableOnce", label: "Writable once" },
-      nums:  [] },
+      nums:  [{ id: "prop-maxRChars",   field: "maxReadChars",      label: "Max read chars",       min: 0, max: 65535 }] },
 ];
 
 const FLAG_FIELDS = [

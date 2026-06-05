@@ -30,8 +30,8 @@ export function readProperties(reader, type) {
             case F.STACKABLE:       type.stackable = true; break;
             case F.FORCE_USE:       type.forceUse = true; break;
             case F.MULTI_USE:       type.multiUse = true; break;
-            case F.WRITABLE:        type.writable = true; type.maxTextLength = reader.readUint16(); break;
-            case F.WRITABLE_ONCE:   type.writableOnce = true; type.maxTextLength = reader.readUint16(); break;
+            case F.WRITABLE:        type.writable = true; type.maxReadWriteChars = reader.readUint16(); break;
+            case F.WRITABLE_ONCE:   type.writableOnce = true; type.maxReadChars = reader.readUint16(); break;
             case F.FLUID_CONTAINER: type.isFluidContainer = true; break;
             case F.FLUID:           type.isFluid = true; break;
             case F.UNPASSABLE:      type.isUnpassable = true; break;
@@ -46,7 +46,7 @@ export function readProperties(reader, type) {
             case F.HAS_LIGHT:       type.hasLight = true; type.lightLevel = reader.readUint16(); type.lightColor = reader.readUint16(); break;
             case F.DONT_HIDE:       type.dontHide = true; break;
             case F.TRANSLUCENT:     type.isTranslucent = true; break;
-            case F.HAS_OFFSET:      type.hasOffset = true; type.offsetX = reader.readUint16(); type.offsetY = reader.readUint16(); break;
+            case F.HAS_OFFSET:      type.hasOffset = true; type.offsetX = reader.readInt16(); type.offsetY = reader.readInt16(); break;
             case F.HAS_ELEVATION:   type.hasElevation = true; type.elevation = reader.readUint16(); break;
             case F.LYING_OBJECT:    type.isLyingObject = true; break;
             case F.ANIMATE_ALWAYS:  type.animateAlways = true; break;

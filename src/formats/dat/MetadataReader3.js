@@ -39,13 +39,13 @@ export function readProperties(reader, type) {
             case F.FORCE_USE:      type.forceUse       = true; break;
 
             case F.WRITABLE:
-                type.writable      = true;
-                type.maxTextLength = reader.readUint16();
+                type.writable          = true;
+                type.maxReadWriteChars = reader.readUint16();
                 break;
 
             case F.WRITABLE_ONCE:
-                type.writableOnce  = true;
-                type.maxTextLength = reader.readUint16();
+                type.writableOnce = true;
+                type.maxReadChars = reader.readUint16();
                 break;
 
             case F.FLUID_CONTAINER: type.isFluidContainer = true; break;
@@ -70,8 +70,8 @@ export function readProperties(reader, type) {
 
             case F.HAS_OFFSET:
                 type.hasOffset = true;
-                type.offsetX   = reader.readUint16();
-                type.offsetY   = reader.readUint16();
+                type.offsetX   = reader.readInt16();
+                type.offsetY   = reader.readInt16();
                 break;
 
             case F.HAS_ELEVATION:

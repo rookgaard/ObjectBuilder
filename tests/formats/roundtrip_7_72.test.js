@@ -24,7 +24,7 @@ const FIELDS_TO_COMPARE = [
     "width", "height", "exactSize", "layers", "patternX", "patternY", "patternZ", "frames",
     "isGround", "groundSpeed", "isGroundBorder", "isOnBottom", "isOnTop",
     "isContainer", "stackable", "forceUse", "multiUse",
-    "writable", "writableOnce", "maxTextLength",
+    "writable", "writableOnce", "maxReadWriteChars", "maxReadChars",
     "isFluidContainer", "isFluid",
     "isUnpassable", "isUnmoveable", "blockMissile", "blockPathfind",
     "pickupable", "hangable", "isVertical", "isHorizontal", "rotatable",

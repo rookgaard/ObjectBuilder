@@ -26,8 +26,8 @@ export function writeItemProperties(w, t) {
     if (t.stackable)     w.writeUint8(F.STACKABLE);
     if (t.multiUse)      w.writeUint8(F.MULTI_USE);
     if (t.forceUse)      w.writeUint8(F.FORCE_USE);
-    if (t.writable)      { w.writeUint8(F.WRITABLE);      w.writeUint16(t.maxTextLength); }
-    if (t.writableOnce)  { w.writeUint8(F.WRITABLE_ONCE); w.writeUint16(t.maxTextLength); }
+    if (t.writable)      { w.writeUint8(F.WRITABLE);      w.writeUint16(t.maxReadWriteChars); }
+    if (t.writableOnce)  { w.writeUint8(F.WRITABLE_ONCE); w.writeUint16(t.maxReadChars); }
     if (t.isFluidContainer) w.writeUint8(F.FLUID_CONTAINER);
     if (t.isFluid)       w.writeUint8(F.FLUID);
     if (t.isUnpassable)  w.writeUint8(F.UNPASSABLE);

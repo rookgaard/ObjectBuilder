@@ -41,7 +41,10 @@ export class ThingType {
         this.hasCharges = false;
         this.writable = false;
         this.writableOnce = false;
-        this.maxTextLength = 0;
+        // WRITABLE → read-write character cap. WRITABLE_ONCE → read-only cap.
+        // AS3 originally fused both into maxTextLength; builder4 fork split them.
+        this.maxReadWriteChars = 0;
+        this.maxReadChars = 0;
         this.isFluidContainer = false;
         this.isFluid = false;
 

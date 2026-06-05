@@ -34,8 +34,8 @@ export function writeProperties(writer, type) {
     }
     if (type.hasOffset) {
         writer.writeUint8(F.HAS_OFFSET);
-        writer.writeUint16(type.offsetX);
-        writer.writeUint16(type.offsetY);
+        writer.writeInt16(type.offsetX);
+        writer.writeInt16(type.offsetY);
     }
     if (type.animateAlways) writer.writeUint8(F.ANIMATE_ALWAYS);
 
@@ -67,11 +67,11 @@ export function writeItemProperties(writer, type) {
 
     if (type.writable) {
         writer.writeUint8(F.WRITABLE);
-        writer.writeUint16(type.maxTextLength);
+        writer.writeUint16(type.maxReadWriteChars);
     }
     if (type.writableOnce) {
         writer.writeUint8(F.WRITABLE_ONCE);
-        writer.writeUint16(type.maxTextLength);
+        writer.writeUint16(type.maxReadChars);
     }
 
     if (type.isFluidContainer) writer.writeUint8(F.FLUID_CONTAINER);
@@ -96,8 +96,8 @@ export function writeItemProperties(writer, type) {
 
     if (type.hasOffset) {
         writer.writeUint8(F.HAS_OFFSET);
-        writer.writeUint16(type.offsetX);
-        writer.writeUint16(type.offsetY);
+        writer.writeInt16(type.offsetX);
+        writer.writeInt16(type.offsetY);
     }
 
     if (type.hasElevation) {
