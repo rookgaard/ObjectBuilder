@@ -276,8 +276,14 @@ signatures (user calls them 7.72) so the version dropdown shows what the user ex
 - [x] Stage 13 — OBD 2.0 single-object import/export. Export selected thing to `.obd`; import
       `.obd` into the current project as a new object and append/reuse sprites as needed. LZMA is
       loaded lazily from a browser script at use time; no npm, no bundler, no `node_modules`.
+- [x] Stages 14–19 — Cross-builder integration sweep (compared upstream forks
+      `builder1/2/3/4`): committed OBD; added gen-6 flags WRAPPABLE / UNWRAPPABLE / TOP_EFFECT;
+      signed offsets + maxReadWrite/maxRead chars split across gens 1–6 + OBD; HAS_BONES (gen 6);
+      `versions.json` extended to 12.90 (28 new clients); FrameGroup (DEFAULT/WALKING) scaffold
+      for outfit ThingTypes from 10.57+.
 - [ ] Optional follow-ups: Animation Editor; Look Generator (outfit colour preview);
-      SpritesOptimizer; theme toggle / a11y deep dive.
+      SpritesOptimizer; theme toggle / a11y deep dive; UI extras from builder4 (Compare Objects,
+      Edit Pixels, Film Roll, Bulk Editor, grid view + size stepper).
 
 Detailed roadmap & resume points: see [PLAN.md](./PLAN.md).
 

@@ -29,6 +29,39 @@ These are decided. No need to re-ask the user.
 
 ## Current focus
 
+> **Stages 14–19 — DONE** (2026-06-05). Cross-builder integration sweep —
+> compared `builder1/2/3/4` (downstream forks of the AS3 source) and ported the
+> spec corrections + missing client configs:
+> - **step 14 — OBD import/export**: see Stage 13 block below for full detail
+>   (commit batched the OBD work + list thumbnails + preview polish from the
+>   previous session that hadn't been committed before /exit).
+> - **step 15 — gen 6 flags**: `WRAPPABLE (0x24)`, `UNWRAPPABLE (0x25)`,
+>   `TOP_EFFECT (0x26)` added to `MetadataFlags6.js` + reader + writer. Writer
+>   emits TOP_EFFECT only for effects (matches builder3); WRAPPABLE / UNWRAPPABLE
+>   only for items.
+> - **step 16 — spec corrections**: `offsetX/offsetY` are signed shorts across
+>   gens 3/4/5/6 + OBD (was unsigned — broke negative offsets). `maxTextLength`
+>   split into `maxReadWriteChars` (WRITABLE) + `maxReadChars` (WRITABLE_ONCE)
+>   across gens 1–6 + OBD + editor + tests; builder4's spec fix.
+> - **step 17 — HAS_BONES (0x27)**: gen-6 only. Reads/writes 8 signed shorts
+>   (N/S/E/W x+y offsets); ThingType gets `hasBones` + `bonesOffsetX[]` +
+>   `bonesOffsetY[]` (4-element arrays).
+> - **step 18 — extend versions.json**: 28 new client signatures up to 12.90
+>   (10.57 → 12.90 with two 12.90 variants); short hex (4-char) signatures
+>   parse cleanly via the existing `parseHex` helper.
+> - **step 19 — FrameGroup scaffold**: outfits from Tibia 10.57+ can carry
+>   separate DEFAULT + WALKING `FrameGroup`s on disk. Added
+>   `src/core/animation/FrameGroup.js` + `FrameGroupType.js`; base
+>   `MetadataReader.readTexturePatterns` / `MetadataWriter.writeTexturePatterns`
+>   now thread a `frameGroups` feature flag. When on + category is outfit the
+>   reader emits `u8 groupCount` + per-group `u8 groupType + …layout…` and
+>   stores entries in `type.frameGroups[type]`. Group 0 is mirrored back onto
+>   the root so existing editor/preview/sprite-index math keeps working without
+>   touching `frameGroups[]`. `DatLoader` / `DatCompiler` auto-derive the flag
+>   from `version.value >= 1057`. Synthetic round-trip test:
+>   `tests/formats/frameGroups.test.js`.
+>
+> --- Stage 13 history (kept for reference) ---
 > **Stage 13 — DONE** (2026-06-05). OBD 2.0 single-object import/export:
 > - `src/formats/obd/ObdFlags.js` + `ObdCodec.js` — byte layout mirrors AS3
 >   `otlib/obd/OBDEncoder.as`: u16 OBD version `200`, u16 client version, u8 category, u32

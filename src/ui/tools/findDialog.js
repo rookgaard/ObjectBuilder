@@ -28,6 +28,7 @@ const BOOL_FIELDS = [
     "isLyingObject", "animateAlways",
     "miniMap", "isLensHelp", "isFullGround", "ignoreLook",
     "cloth", "isMarketItem", "hasDefaultAction",
+    "wrappable", "unwrappable", "topEffect", "usable", "hasBones",
 ];
 
 const NUM_FIELDS = [
