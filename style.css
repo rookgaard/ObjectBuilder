@@ -1333,6 +1333,61 @@ body.is-splitter-dragging {
     font-size: 12px;
 }
 
+/* ---- sprites optimizer ------------------------------------------- */
+
+.modal-card:has(.sprites-optimizer) {
+    max-width: min(90vw, 460px);
+}
+
+.sprites-optimizer {
+    width: min(76vw, 400px);
+    display: grid;
+    gap: 10px;
+}
+
+.sprites-optimizer__options,
+.sprites-optimizer__result {
+    background: #303030;
+    border: 1px solid #1c1c1c;
+    border-radius: 4px;
+    padding: 8px;
+}
+
+.sprites-optimizer__options {
+    display: grid;
+    gap: 6px;
+}
+
+.sprites-optimizer__stats {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 5px 12px;
+    margin: 0;
+    font-size: 12px;
+}
+
+.sprites-optimizer__stats dt {
+    color: #9a9a9a;
+}
+
+.sprites-optimizer__stats dd {
+    margin: 0;
+    color: #e6e6e6;
+    font-variant-numeric: tabular-nums;
+}
+
+.sprites-optimizer__status {
+    margin-top: 8px;
+    color: #b8b8b8;
+    font-size: 12px;
+}
+
+.sprites-optimizer__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
 @media (max-width: 760px) {
     .look-generator {
         min-width: 0;
@@ -1359,6 +1414,10 @@ body.is-splitter-dragging {
     .animation-editor {
         width: min(86vw, 520px);
         grid-template-columns: 1fr;
+    }
+
+    .sprites-optimizer {
+        width: min(82vw, 400px);
     }
 }
 

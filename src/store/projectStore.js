@@ -54,6 +54,12 @@ function notifyProjectMutation() {
     bus.trigger(EVENTS.SELECTION_CHANGE, [state]);
 }
 
+export function markProjectDirty() {
+    if (!state.project) return;
+    state.project.dirty = true;
+    notifyProjectMutation();
+}
+
 export function setSelectedCategory(category) {
     if (state.selectedCategory === category) return;
     state.selectedCategory = category;

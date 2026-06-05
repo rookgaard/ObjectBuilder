@@ -147,6 +147,19 @@ export class SprFile {
         return prev;
     }
 
+    /** Replace the whole sprite table with 1-indexed ids from `sprites[]`. */
+    replaceSprites(sprites) {
+        this.spritesCount = sprites.length;
+        this._overrides = new Map();
+        this._cache.clear();
+        for (let i = 0; i < sprites.length; i++) {
+            const pixels = sprites[i];
+            if (pixels && pixels.length === SPRITE_BYTES) {
+                this._overrides.set(i + 1, new Uint8Array(pixels));
+            }
+        }
+    }
+
     /** True iff sprite `id` carries no pixel data (address 0 or zero-length payload). */
     isEmpty(id) {
         if (id === 0) return true;

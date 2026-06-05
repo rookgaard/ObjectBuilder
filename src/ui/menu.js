@@ -20,6 +20,7 @@ import { showFindDialog }       from "./tools/findDialog.js";
 import { showLookTypeGeneratorDialog } from "./tools/lookTypeGeneratorDialog.js";
 import { showObjectViewerDialog } from "./tools/objectViewerDialog.js";
 import { showSlicerDialog }     from "./tools/slicerDialog.js";
+import { showSpritesOptimizerDialog } from "./tools/spritesOptimizerDialog.js";
 import { compileAndDownload }   from "../app/compileProject.js";
 import { loadVersions }         from "../app/loadProject.js";
 import {
@@ -51,6 +52,7 @@ const HANDLERS = {
     "tools.objectViewer": () => showObjectViewerDialog().catch((e) => console.error("[menu] object viewer failed", e)),
     "tools.slicer": () => showSlicerDialog().catch((e) => console.error("[menu] slicer failed", e)),
     "tools.animationEditor": () => showAnimationEditorDialog().catch((e) => console.error("[menu] animation editor failed", e)),
+    "tools.spritesOptimizer": () => showSpritesOptimizerDialog().catch((e) => console.error("[menu] sprites optimizer failed", e)),
 
     "window.log":      () => showLogWindow().catch((e) => console.error("[menu] log failed", e)),
     "window.versions": () => showVersionsWindow().catch((e) => console.error("[menu] versions failed", e)),

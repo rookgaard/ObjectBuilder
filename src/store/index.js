@@ -10,6 +10,7 @@ export {
     setSelectedSpriteId,
     on,
     off,
+    markProjectDirty,
     getSelectedThing,
     replaceThing,
     addThing,
