@@ -25,9 +25,15 @@ const HEADER_SIZE = 12; // u32 signature + 4 × u16 counts
  * @returns {DatParseResult}
  */
 export function loadDat(buffer, version, options = {}) {
-    const { extended: extOpt = false, improvedAnimations: animOpt = false, strict = true } = options;
-    const isExtended    = extOpt  || version.value >= 960;
-    const hasFrameDurs  = animOpt || version.value >= 1050;
+    const {
+        extended: extOpt = false,
+        improvedAnimations: animOpt = false,
+        frameGroups: groupsOpt = false,
+        strict = true,
+    } = options;
+    const isExtended    = extOpt    || version.value >= 960;
+    const hasFrameDurs  = animOpt   || version.value >= 1050;
+    const hasFrameGrps  = groupsOpt || version.value >= 1057;
 
     const reader = new BinaryReader(buffer);
     if (reader.length < HEADER_SIZE) {
@@ -55,10 +61,10 @@ export function loadDat(buffer, version, options = {}) {
         throw new Error(`DatLoader: no reader for version ${version.valueStr}`);
     }
 
-    const items    = readList(reader, impl, MIN_ITEM_ID,    itemsCount,    ITEM,    isExtended, hasFrameDurs);
-    const outfits  = readList(reader, impl, MIN_OUTFIT_ID,  outfitsCount,  OUTFIT,  isExtended, hasFrameDurs);
-    const effects  = readList(reader, impl, MIN_EFFECT_ID,  effectsCount,  EFFECT,  isExtended, hasFrameDurs);
-    const missiles = readList(reader, impl, MIN_MISSILE_ID, missilesCount, MISSILE, isExtended, hasFrameDurs);
+    const items    = readList(reader, impl, MIN_ITEM_ID,    itemsCount,    ITEM,    isExtended, hasFrameDurs, hasFrameGrps);
+    const outfits  = readList(reader, impl, MIN_OUTFIT_ID,  outfitsCount,  OUTFIT,  isExtended, hasFrameDurs, hasFrameGrps);
+    const effects  = readList(reader, impl, MIN_EFFECT_ID,  effectsCount,  EFFECT,  isExtended, hasFrameDurs, hasFrameGrps);
+    const missiles = readList(reader, impl, MIN_MISSILE_ID, missilesCount, MISSILE, isExtended, hasFrameDurs, hasFrameGrps);
 
     if (reader.bytesAvailable !== 0) {
         const msg = `DatLoader: ${reader.bytesAvailable} trailing byte(s) after parsing`;
@@ -80,10 +86,11 @@ export function loadDat(buffer, version, options = {}) {
         missiles,
         extended: isExtended,
         improvedAnimations: hasFrameDurs,
+        frameGroups: hasFrameGrps,
     };
 }
 
-function readList(reader, impl, minId, maxId, category, extended, frameDurations) {
+function readList(reader, impl, minId, maxId, category, extended, frameDurations, frameGroups) {
     const map = new Map();
     for (let id = minId; id <= maxId; id++) {
         const thing = new ThingType();
@@ -91,7 +98,7 @@ function readList(reader, impl, minId, maxId, category, extended, frameDurations
         thing.category = category;
         try {
             impl.readProperties(reader, thing);
-            impl.readTexturePatterns(reader, thing, extended, frameDurations);
+            impl.readTexturePatterns(reader, thing, extended, frameDurations, frameGroups);
         } catch (err) {
             throw new Error(
                 `DatLoader: failed reading ${category} id ${id} at byte ${reader.position}: ${err.message}`

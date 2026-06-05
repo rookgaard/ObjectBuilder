@@ -9,7 +9,11 @@ export function compileCurrentProject() {
     const project = getState().project;
     if (!project) throw new Error("compileCurrentProject: no project loaded");
 
-    const datBytes = compileDat(project.dat, project.version);
+    const datBytes = compileDat(project.dat, project.version, {
+        extended: project.dat.extended,
+        improvedAnimations: project.dat.improvedAnimations,
+        frameGroups: project.dat.frameGroups,
+    });
     const sprBytes = compileSpr(project.spr, project.version, {
         extended: project.spr.extended,
         transparency: project.spr.transparency,

@@ -39,6 +39,10 @@ export async function showOpenDialog() {
                 <input type="checkbox" id="open-improvedAnimations">
                 <span>Improved animations (per-frame durations — auto for v ≥ 10.50)</span>
             </label>
+            <label class="inline">
+                <input type="checkbox" id="open-frameGroups">
+                <span>Frame groups (multiple outfit groups — auto for v ≥ 10.57)</span>
+            </label>
         </div>
     `);
 
@@ -80,6 +84,7 @@ export async function showOpenDialog() {
         extended:           $body.find("#open-extended").is(":checked")           || undefined,
         transparency:       $body.find("#open-transparency").is(":checked")       || undefined,
         improvedAnimations: $body.find("#open-improvedAnimations").is(":checked") || undefined,
+        frameGroups:        $body.find("#open-frameGroups").is(":checked")        || undefined,
         strict: false,
     };
 

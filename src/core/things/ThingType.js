@@ -118,6 +118,12 @@ export class ThingType {
         this.loopCount = 0;
         this.startFrame = 0;
         this.frameDurations = null;   // FrameDuration[] when isAnimation
+
+        // Frame groups (outfits, Tibia 10.57+). When non-empty, each entry is a
+        // FrameGroup (index 0 = DEFAULT, 1 = WALKING). The root-level geometry
+        // fields above mirror frameGroups[0] so legacy preview / editor code
+        // keeps working. Empty array means single-group (pre-10.57) layout.
+        this.frameGroups = [];
     }
 
     toString() {
@@ -185,6 +191,11 @@ export class ThingType {
         }
         copy.bonesOffsetX = this.bonesOffsetX.slice();
         copy.bonesOffsetY = this.bonesOffsetY.slice();
+        if (Array.isArray(this.frameGroups) && this.frameGroups.length) {
+            copy.frameGroups = this.frameGroups.map((g) => g.clone());
+        } else {
+            copy.frameGroups = [];
+        }
         return copy;
     }
 }
