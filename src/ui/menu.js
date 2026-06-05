@@ -15,6 +15,7 @@ import {
 import { showOpenDialog }       from "./dialogs/openDialog.js";
 import { showNewDialog }        from "./dialogs/newDialog.js";
 import { showCompileAsDialog }  from "./dialogs/compileAsDialog.js";
+import { showAnimationEditorDialog } from "./tools/animationEditorDialog.js";
 import { showFindDialog }       from "./tools/findDialog.js";
 import { showLookTypeGeneratorDialog } from "./tools/lookTypeGeneratorDialog.js";
 import { showObjectViewerDialog } from "./tools/objectViewerDialog.js";
@@ -49,6 +50,7 @@ const HANDLERS = {
     "tools.lookGenerator": () => showLookTypeGeneratorDialog().catch((e) => console.error("[menu] look generator failed", e)),
     "tools.objectViewer": () => showObjectViewerDialog().catch((e) => console.error("[menu] object viewer failed", e)),
     "tools.slicer": () => showSlicerDialog().catch((e) => console.error("[menu] slicer failed", e)),
+    "tools.animationEditor": () => showAnimationEditorDialog().catch((e) => console.error("[menu] animation editor failed", e)),
 
     "window.log":      () => showLogWindow().catch((e) => console.error("[menu] log failed", e)),
     "window.versions": () => showVersionsWindow().catch((e) => console.error("[menu] versions failed", e)),

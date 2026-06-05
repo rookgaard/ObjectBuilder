@@ -1231,6 +1231,108 @@ body.is-splitter-dragging {
     font-variant-numeric: tabular-nums;
 }
 
+/* ---- animation editor -------------------------------------------- */
+
+.modal-card:has(.animation-editor) {
+    max-width: min(94vw, 880px);
+}
+
+.animation-editor {
+    width: min(86vw, 820px);
+    min-height: min(72vh, 540px);
+    display: grid;
+    grid-template-columns: 270px minmax(0, 1fr);
+    gap: 10px;
+}
+
+.animation-editor__preview-panel,
+.animation-editor__settings {
+    min-height: 0;
+    background: #303030;
+    border: 1px solid #1c1c1c;
+    border-radius: 4px;
+    padding: 8px;
+}
+
+.animation-editor__preview-panel {
+    display: grid;
+    grid-template-rows: minmax(220px, 1fr) auto;
+    gap: 8px;
+}
+
+.animation-editor__preview {
+    display: grid;
+    place-items: center;
+    overflow: auto;
+    background: #252525;
+    border: 1px solid #1c1c1c;
+}
+
+.animation-editor__transport,
+.animation-editor__actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.animation-editor__transport .button,
+.animation-editor__actions .button {
+    padding-inline: 9px;
+}
+
+.animation-editor__settings {
+    display: grid;
+    grid-template-rows: auto minmax(180px, 1fr) auto;
+    gap: 10px;
+}
+
+.animation-editor__checkbox {
+    align-self: end;
+    min-height: 24px;
+}
+
+.animation-editor__frames-wrap {
+    min-height: 0;
+    overflow: auto;
+    border: 1px solid #1c1c1c;
+    background: #2f2f2f;
+}
+
+.animation-editor__frames {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.animation-editor__frames th,
+.animation-editor__frames td {
+    padding: 5px 6px;
+    border-bottom: 1px solid #242424;
+    text-align: left;
+}
+
+.animation-editor__frames th {
+    position: sticky;
+    top: 0;
+    background: #262626;
+    z-index: 1;
+}
+
+.animation-editor__frames input {
+    min-width: 70px;
+}
+
+.animation-editor__frame-jump {
+    width: 100%;
+    padding-inline: 8px;
+}
+
+.animation-editor__status {
+    color: #b8b8b8;
+    font-size: 12px;
+}
+
 @media (max-width: 760px) {
     .look-generator {
         min-width: 0;
@@ -1252,6 +1354,11 @@ body.is-splitter-dragging {
 
     .object-viewer__info {
         grid-template-columns: auto 1fr;
+    }
+
+    .animation-editor {
+        width: min(86vw, 520px);
+        grid-template-columns: 1fr;
     }
 }
 

@@ -21,6 +21,7 @@ import "./ui/animator.test.js";
 import "./ui/spriteSheet.test.js";
 import "./ui/lookTypeGenerator.test.js";
 import "./ui/objectViewer.test.js";
+import "./ui/animationEditor.test.js";
 import "./store/projectStore.test.js";
 import "./store/undo.test.js";
 import "./store/mutations.test.js";
