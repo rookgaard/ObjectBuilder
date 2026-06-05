@@ -736,6 +736,78 @@ body.is-splitter-dragging {
     gap: 3px;
 }
 
+/* ---- modal --------------------------------------------------- */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+}
+
+.modal-card {
+    background: #3a3a3a;
+    border: 1px solid #1c1c1c;
+    border-radius: 4px;
+    min-width: 380px;
+    max-width: 540px;
+    color: #e6e6e6;
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+}
+
+.modal-card__header {
+    padding: 10px 14px;
+    background: #2d2d2d;
+    font-weight: 600;
+    border-bottom: 1px solid #1c1c1c;
+}
+
+.modal-card__body {
+    padding: 14px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.modal-card__body label {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 12px;
+    color: #d8d8d8;
+}
+
+.modal-card__body label.inline {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+}
+
+.modal-card__footer {
+    padding: 8px 14px;
+    background: #353535;
+    border-top: 1px solid #1c1c1c;
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.button--primary {
+    background: #1f6db3;
+    border-color: #2980d2;
+}
+
+.button--primary:hover {
+    background: #2980d2;
+}
+
 /* ---- status bar --------------------------------------------------- */
 
 .app-status {

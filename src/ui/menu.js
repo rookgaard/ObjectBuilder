@@ -3,6 +3,11 @@
 
 import { STRINGS } from "./strings.js";
 import { togglePanel, isPanelVisible } from "./layout.js";
+import { setProject, getState } from "../store/index.js";
+import { showOpenDialog }       from "./dialogs/openDialog.js";
+import { showNewDialog }        from "./dialogs/newDialog.js";
+import { showCompileAsDialog }  from "./dialogs/compileAsDialog.js";
+import { compileAndDownload }   from "../app/compileProject.js";
 
 const $ = window.jQuery;
 
@@ -11,7 +16,54 @@ const HANDLERS = {
     "view.showPreview": () => syncViewItem("view.showPreview", "panel-preview"),
     "view.showObjects": () => syncViewItem("view.showObjects", "panel-things"),
     "view.showSprites": () => syncViewItem("view.showSprites", "panel-sprites"),
+
+    "file.new":        () => doNew(),
+    "file.open":       () => doOpen(),
+    "file.compile":    () => doCompile(),
+    "file.compileAs":  () => doCompileAs(),
+    "file.close":      () => doClose(),
+    "file.exit":       () => console.info("[menu] File → Exit is a no-op in the browser."),
 };
+
+function reportStatus(msg) {
+    $(".app-status").text(msg);
+}
+
+async function doNew() {
+    try {
+        const p = await showNewDialog();
+        if (p) reportStatus(`New project — ${p.version.valueStr}.`);
+    } catch (err) { console.error("[menu] new failed", err); reportStatus(`New failed: ${err.message}`); }
+}
+
+async function doOpen() {
+    try {
+        const p = await showOpenDialog();
+        if (p) reportStatus(`Opened ${p.version.valueStr} — ${p.dat.itemsCount} items, ${p.spr.spritesCount} sprites.`);
+    } catch (err) { console.error("[menu] open failed", err); reportStatus(`Open failed: ${err.message}`); }
+}
+
+function doCompile() {
+    if (!getState().project) { reportStatus("No project loaded."); return; }
+    try {
+        const out = compileAndDownload();
+        reportStatus(`Compiled — dat ${out.datBytes.length} B, spr ${out.sprBytes.length} B.`);
+    } catch (err) { console.error("[menu] compile failed", err); reportStatus(`Compile failed: ${err.message}`); }
+}
+
+async function doCompileAs() {
+    if (!getState().project) { reportStatus("No project loaded."); return; }
+    try {
+        const out = await showCompileAsDialog();
+        if (out) reportStatus(`Compiled as ${out.version.valueStr}.`);
+    } catch (err) { console.error("[menu] compileAs failed", err); reportStatus(`Compile As failed: ${err.message}`); }
+}
+
+function doClose() {
+    if (!getState().project) { reportStatus("No project loaded."); return; }
+    setProject(null);
+    reportStatus("Project closed.");
+}
 
 function syncViewItem(commandId, panelId) {
     togglePanel(panelId);

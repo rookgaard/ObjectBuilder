@@ -3,6 +3,8 @@
 import { STRINGS } from "./strings.js";
 import { loadReferenceProject } from "../app/loadProject.js";
 import { compileAndDownload } from "../app/compileProject.js";
+import { showOpenDialog }      from "./dialogs/openDialog.js";
+import { showNewDialog }       from "./dialogs/newDialog.js";
 import {
     canUndo,
     canRedo,
@@ -66,6 +68,22 @@ export function renderToolbar($host) {
 function runToolbarCommand(cmd, $btn) {
     if (cmd === "toolbar.undo") { if (canUndo()) undo(); return; }
     if (cmd === "toolbar.redo") { if (canRedo()) redo(); return; }
+
+    if (cmd === "toolbar.new") {
+        showNewDialog().catch((err) => console.error("[toolbar] new failed", err));
+        return;
+    }
+    if (cmd === "toolbar.open") {
+        showOpenDialog().catch((err) => console.error("[toolbar] open failed", err));
+        return;
+    }
+    if (cmd === "toolbar.save") {
+        // Save is the editor's per-thing commit; that's already wired in the
+        // editor panel. Toolbar Save = "Compile" — produce the .dat/.spr.
+        if (!getState().project) { console.warn("[toolbar] save: no project"); return; }
+        try { compileAndDownload(); } catch (e) { console.error(e); }
+        return;
+    }
 
     if (cmd === "toolbar.compile") {
         if (!getState().project) {

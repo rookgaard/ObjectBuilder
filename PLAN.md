@@ -29,7 +29,33 @@ These are decided. No need to re-ask the user.
 
 ## Current focus
 
-> **Stage 8 — DONE** (2026-06-05). Add / duplicate / remove:
+> **Stage 9 — DONE** (2026-06-05). File menu wired (Open / New / Compile / Compile As / Close):
+> - `src/ui/widgets/modal.js` — generic Promise-based modal with backdrop click + Esc.
+> - `src/ui/dialogs/openDialog.js` — picks `.dat` + `.spr` File objects + version dropdown +
+>   extended/transparency/improvedAnimations toggles. Loads via `buildProject()`.
+> - `src/ui/dialogs/newDialog.js` — creates a blank project at the chosen version (minimal SPR
+>   in memory with one empty sprite slot; per-category Maps with one `ThingType.create()`).
+> - `src/ui/dialogs/compileAsDialog.js` — base filename + version override; downloads both files.
+> - `src/ui/menu.js` File menu handlers: New / Open / Compile / Compile As / Close (Exit no-ops in
+>   the browser). Wires status-bar feedback.
+> - `src/ui/toolbar.js` New / Open / Save → dialogs (Save behaves as Compile, matching AS3's
+>   primary download path).
+> - Note: OBD single-object import/export is reshuffled out of Stage 9 (PLAN.md original) into
+>   Stage 10 since it needs an LZMA dependency. The "Open / New" wiring lands here because
+>   without it the app can't load user-provided files outside the dev reference button.
+> - Verified: 66 modules clean under `node --check`; new endpoints all 200.
+>
+> **Now active: Stage 10 — OBD single-object import/export.**
+>
+> **Next concrete step**: pick an LZMA codec. `lzma1` looks cleanest as an ESM import via
+> esm.sh: `import LZMA from "https://esm.sh/lzma1@1.0.10";` with promise-style API. Verify it
+> exposes synchronous compress/decompress over `Uint8Array`. Then `src/formats/obd/{ObdReader,ObdWriter}.js`
+> following `../ObjectBuilder-AS/OBD 2.0 Structure.txt`: u8 major + u8 minor + u16 client
+> version + u8 category, then `MetadataReader{N}.readProperties + readTexturePatterns`, then a
+> sprite-pixel block (4096 bytes ARGB each). Whole stream LZMA-compressed. Add Export/Import
+> buttons in the toolbar (Stage 8 left them as TODO).
+>
+> Update this section the moment a sub-task closes.
 > - `src/store/projectStore.js` got `addThing(category, source?)`,
 >   `duplicateThing(category, sourceId)`, `removeThing(category, id)` mirroring AS3
 >   `ThingTypeStorage` (remove highest id ⇒ decrement count, remove middle ⇒ blank slot).
