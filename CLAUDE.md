@@ -183,7 +183,6 @@ src/
 public/
   versions.json    // ported from AS3 firstRun/versions.xml
   assets/          // alert sprite PNG, icons (lifted from ObjectBuilder-AS/assets)
-references/        // user's local Tibia.dat / Tibia.spr for testing (gitignored)
 ```
 
 The AS3 app communicates UI ↔ a worker through "commands" (`LoadFilesCommand`, `GetThingCommand`,
@@ -227,45 +226,24 @@ running and a second one would just collide on the port.
 - **Documentation (`*.md`) is written in English only.** Conversation with the project owner is in
   Polish; that does not leak into committed files.
 
-## Reference test files
-
-The user keeps a working `Tibia.dat` + `Tibia.spr` pair under `references/` (gitignored). Read at
-project start, header reports:
-
-| File        | Bytes    | Header field                             | Value                       |
-| ----------- | -------- | ---------------------------------------- | --------------------------- |
-| `Tibia.dat` | 186 653  | signature (u32, LE)                      | `0x439D5A33`                |
-|             |          | itemsCount  (u16)                        | 5157 (ids 100..5157)        |
-|             |          | outfitsCount (u16)                       | 254  (ids 1..254)           |
-|             |          | effectsCount (u16)                       | 26                          |
-|             |          | missilesCount (u16)                      | 16                          |
-| `Tibia.spr` | 14 583 074 | signature (u32, LE)                    | `0x439852BE`                |
-|             |          | spritesCount (u16, non-extended)         | 10423                       |
-
-Those signatures are bit-for-bit the AS3 `versions.xml` entry for **value=770 / "7.70"** — there is
-no distinct 7.72 entry in the stock AS3 list, and the dat/spr in `references/` self-identify as the
-7.70 generation. `MetadataReader3` (which covers the 7.55–7.72 band) is the correct decoder either
-way. We surface this file as `value: 772, valueStr: "7.72"` in `public/versions.json` with the same
-signatures (user calls them 7.72) so the version dropdown shows what the user expects.
-
 ## Status
 
 - [x] Analyzed AS3 source, mapped UI + binary formats.
-- [x] Identified `references/Tibia.dat` + `Tibia.spr` signatures (gen 3 / 7.55–7.72 band).
+- [x] Identified the 7.72 `Tibia.dat` + `Tibia.spr` signatures (gen 3 / 7.55–7.72 band).
 - [x] Stage 0 — Static project scaffold (index.html + jQuery 4.0.0, style.css, src/ layout,
       public/versions.json, .editorconfig; smoke-tested via http.server).
 - [x] Stage 1 — UI shell mock (4-column layout, splitters, menu, toolbar, editor tabs, mock data).
 - [x] Stage 2 — Binary I/O + sprite RLE codec + ThingType/Version/FrameDuration; in-browser PASS/
       FAIL runner at <http://127.0.0.1/tests.html>.
-- [x] Stage 3 — DAT gen-3 reader + SPR lazy reader + projectStore + UI "Load 7.72 (dev)" wires
-      real counts/sprites into the shell. Integration tests against `references/Tibia.{dat,spr}`.
+- [x] Stage 3 — DAT gen-3 reader + SPR lazy reader + projectStore + UI loads
+      real counts/sprites into the shell. Integration tests against a local 7.72 `Tibia.{dat,spr}` pair.
 - [x] Stage 4 — Virtual list for the Object panel, read-only editor bound to selected ThingType,
       keyboard nav, stepper clamping, new test suites.
 - [x] Stage 5 — Live preview: SpriteSheet composer + Animator + ThingDataView widget + pattern
       controls in the preview panel.
 - [x] Stage 6 — Editor edits flags/properties/texture, Save/Close + undo stack + Ctrl+Z/Ctrl+Y.
 - [x] Stage 7 — DAT + SPR compilers + Compile toolbar button + byte-identical round-trip
-      against `references/Tibia.{dat,spr}` (186 KB / 14 MB).
+      against a local 7.72 `Tibia.{dat,spr}` pair (186 KB / 14 MB).
 - [x] Stage 8 — add/duplicate/remove for ThingType + add/remove sprite with overlay; icon
       buttons + undo entries; round-trip preserved through SPR re-compile.
 - [x] Stage 9 — File menu wiring: Open / New / Compile / Compile As / Close dialogs.
@@ -283,6 +261,11 @@ signatures (user calls them 7.72) so the version dropdown shows what the user ex
       FrameGroup (DEFAULT/WALKING) scaffold for outfit ThingTypes from 10.57+; Find dialog new flags;
       Stand/Walking pose toggle in preview panel; single multi-file Open picker with auto-detect;
       OBD v3 codec (outfit FrameGroups + per-sprite size prefix).
+- [x] File → Merge — merge a second client DAT/SPR into the open project
+      (`src/app/mergeProject.js` + `src/ui/dialogs/mergeDialog.js`, wired in the
+      File menu). Ports `otlib/utils/ClientMerger.as` + `MergeAssetsWindow.mxml`:
+      optional source sprite-optimize, sprite-id remap (incl. FrameGroups),
+      append objects, u16 overflow preflight. Tests: `tests/app/mergeProject.test.js`.
 - [ ] Optional follow-ups: see [TODO.md](./TODO.md) for the full backlog
       (Animation Editor; Look Generator; SpritesOptimizer; Compare Objects;
       Edit Pixels; Film Roll; Bulk Editor; grid view + size stepper; theme toggle / a11y).

@@ -19,7 +19,7 @@ These are decided. No need to re-ask the user.
 - **Language**: vanilla JavaScript (ES2022+). No TypeScript, no JSX.
 - **UI strings**: English only (matches AS3 default).
 - **Project owner ↔ Claude communication language**: Polish. Committed files stay English.
-- **Test files for 7.72**: `references/Tibia.dat` + `references/Tibia.spr` (gitignored).
+- **Test files for 7.72**: a local `Tibia.dat` + `Tibia.spr` pair (gitignored).
   Signatures: dat `0x439D5A33`, spr `0x439852BE`. 5157 items, 254 outfits, 26 effects, 16 missiles,
   10423 sprites (non-extended u16). These signatures match the AS3 `value=770 "7.70"` entry; the
   bytes use generation-3 layout (covered by `MetadataReader3`). Listed in `versions.json` as
@@ -28,6 +28,28 @@ These are decided. No need to re-ask the user.
 ---
 
 ## Current focus
+
+> **File → Merge — DONE** (2026-06-05). Ported `ClientMerger` +
+> `MergeAssetsWindow` to the browser:
+> - `src/app/mergeProject.js` — `mergeClientFiles({datBuffer, sprBuffer,
+>   version, options, optimizeSprites})` loads the second client (DatLoader +
+>   SprFile) and calls the pure `mergeClient(current, source, {optimizeSprites})`,
+>   then a single `markProjectDirty()`. `mergeClient` snapshots counts, optionally
+>   runs the existing sprite optimizer on the throwaway source, then a **plan**
+>   phase (stage sprites + remap each non-empty source thing's spriteIndex and
+>   per-FrameGroup spriteIndex, `seen`-guarded for the shared root/group-0 array)
+>   followed by a u16 **preflight** (sprite count + per-category count overflow)
+>   and only then a **commit** phase that mutates `current` — so a rejected merge
+>   never half-mutates. Pre-10.57 source outfits merged into a frameGroups
+>   project get a synthesized DEFAULT FrameGroup sharing the remapped root array.
+> - `src/ui/dialogs/mergeDialog.js` — clone of the Open dialog (multi-file
+>   picker auto-classifies dat/spr by signature, version dropdown,
+>   extended/transparency/improvedAnimations/frameGroups) + an "Optimize sprites
+>   before merge" checkbox (default on, matching AS3). Guards no-project.
+> - `src/ui/menu.js` — `file.merge` wired to `doMerge()` with a no-project guard
+>   and a `+N items / +N sprites …` status report.
+> - Tests: `tests/app/mergeProject.test.js` (remap + empty-skip + optimize +
+>   frameGroup normalization + overflow-rejection-without-partial-mutation).
 
 > **Stages 14–24 — DONE** (2026-06-05). Cross-builder integration sweep —
 > compared `builder1/2/3/4` (downstream forks of the AS3 source) and ported the
@@ -196,7 +218,7 @@ These are decided. No need to re-ask the user.
 > - Toolbar Compile button wired (status bar reports byte counts).
 > - Tests: `tests/formats/{datCompiler,sprCompiler}.test.js` (synthetic), plus
 >   `tests/formats/roundtrip_7_72.test.js` — asserts **byte-identical** compile(load(file)) ===
->   file for both `references/Tibia.dat` and `Tibia.spr` (186 653 B / 14 583 074 B).
+>   file for both the local `Tibia.dat` and `Tibia.spr` (186 653 B / 14 583 074 B).
 > - Verified: 60 modules clean under `node --check`; Node smoke against real files confirms
 >   DAT compile 21 ms / SPR 217 ms, both outputs byte-for-byte equal to the inputs, sampled
 >   items + sprites match field-for-field and pixel-for-pixel.
@@ -234,7 +256,7 @@ These are decided. No need to re-ask the user.
 > **Next concrete step**: port `MetadataWriter` + `MetadataWriter3` from AS3 into
 > `src/formats/dat/{MetadataWriter,MetadataWriter3}.js`, then a `DatCompiler.js` that mirrors
 > `ThingTypeStorage.compile`. Then `src/formats/spr/SprCompiler.js` (header + offset table + RLE
-> payloads). The hardest test is the round-trip: load `references/Tibia.dat` + `Tibia.spr`,
+> payloads). The hardest test is the round-trip: load the local 7.72 `Tibia.dat` + `Tibia.spr`,
 > compile back without any edit, diff the bytes — they must match byte-for-byte. That test alone
 > proves both readers and writers are correct.
 >
@@ -305,17 +327,16 @@ These are decided. No need to re-ask the user.
 >   address-0 / out-of-range cases.
 > - `src/store/projectStore.js` — minimal app state (current project + selection) + jQuery
 >   `$({})` event bus with `EVENTS.PROJECT_CHANGE` / `SELECTION_CHANGE`.
-> - `src/app/loadProject.js` — `loadVersions()` (memoized `versions.json` fetch), `findVersion()`,
->   `buildProject()` and the `loadReferenceProject()` dev shortcut (fetches `/references/`).
-> - UI wired to real data: a blue **"Load 7.72 (dev)"** toolbar button fires
->   `loadReferenceProject()`; on success the Files panel updates counts, the Object list windows
->   200 ids around the selection, the Preview canvas renders the selected thing's first sprite via
+> - `src/app/loadProject.js` — `loadVersions()` (memoized `versions.json` fetch) and
+>   `buildProject()`.
+> - UI wired to real data: loading a client version updates the Files panel counts, the Object list
+>   windows 200 ids around the selection, the Preview canvas renders the selected thing's first sprite via
 >   `argbToImageData()`, and the Sprite panel renders one mini-canvas per `spriteIndex` slot.
 >   Status bar logs the load summary.
 > - Tests: `tests/formats/datLoader.test.js` (synthetic gen-3 DAT — header, flags, missing ids,
 >   unknown-flag throw); `tests/formats/sprFile.test.js` (synthetic 3-sprite SPR — header, empty
 >   address, mixed runs, cache reuse); `tests/formats/integration_7_72.test.js` (fetches the real
->   `references/Tibia.dat` + `Tibia.spr`, asserts the same 5157/254/26/16/10423 counts).
+>   local `Tibia.dat` + `Tibia.spr`, asserts the same 5157/254/26/16/10423 counts).
 > - Verified: all 41 modules pass `node --check`; a Node smoke script parsed the actual DAT in
 >   ~43 ms and decoded item 100's first sprite (4096 bytes, A=255 R=41 G=0 B=0).
 >
@@ -508,16 +529,14 @@ Targets `MetadataReader3` band (7.55–7.72).
   `public/versions.json`. Reading with `FileReader.readAsArrayBuffer()`.
 - When the user has the File System Access API, prefer `window.showOpenFilePicker` for a smoother
   native dialog; otherwise fall back to the `<input>` flow.
-- For the test fixtures in `references/`, add a dev-only "Load reference 7.72" button so we don't
-  have to click through the dialog on every reload during development. The button reads via
-  `fetch('./references/Tibia.dat')` and `fetch('./references/Tibia.spr')` — works as long as the
-  static server serves the `references/` folder. Remove this button once we're past Stage 7.
+- During development, a temporary dev-only shortcut loaded a bundled 7.72 `Tibia.dat` / `Tibia.spr`
+  pair so we didn't have to click through the dialog on every reload. (Removed after Stage 7.)
 
 **Exit criteria**
 - [x] "Load 7.72 (dev)" reads both files and the UI displays itemsCount=5157, outfitsCount=254,
       effectsCount=26, missilesCount=16, spritesCount=10423 — matches the header inspection.
 - [x] A hand-picked item (id=100) renders its sprite in the preview canvas. Verified via Node
-      smoke against `references/Tibia.dat` + `Tibia.spr` (item 100, first sprite id 131, decoded
+      smoke against the local `Tibia.dat` + `Tibia.spr` (item 100, first sprite id 131, decoded
       4096 bytes, first pixel A=255 R=41 G=0 B=0).
 - [x] No JS errors, no NaN sprite coordinates (strict mode validates throughout the readers).
 - [x] DAT file is consumed fully (`bytesAvailable == 0`) — `strict: true` throws otherwise.
@@ -699,7 +718,7 @@ they're impossible to miss.)
 - **UI strings**: English only. Decided 2026-06-05.
 - **Documentation language**: English-only in committed files; Polish only in live conversation.
   Decided 2026-06-05.
-- **7.72 client files**: provided by project owner at `references/Tibia.dat` + `references/Tibia.spr`.
+- **7.72 client files**: provided by project owner as a local `Tibia.dat` + `Tibia.spr` pair.
   Signatures dat=`0x439D5A33`, spr=`0x439852BE`, counts 5157/254/26/16, 10423 sprites. These
   signatures are bytewise identical to AS3's `value=770 "7.70"` entry. Confirmed 2026-06-05.
 - **OBD parsing**: defer to Stage 9; pull an LZMA decoder from a CDN as an ES module then.

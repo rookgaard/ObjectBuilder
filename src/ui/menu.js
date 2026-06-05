@@ -15,6 +15,7 @@ import {
 import { showOpenDialog }       from "./dialogs/openDialog.js";
 import { showNewDialog }        from "./dialogs/newDialog.js";
 import { showCompileAsDialog }  from "./dialogs/compileAsDialog.js";
+import { showMergeDialog }      from "./dialogs/mergeDialog.js";
 import { showAnimationEditorDialog } from "./tools/animationEditorDialog.js";
 import { showFindDialog }       from "./tools/findDialog.js";
 import { showLookTypeGeneratorDialog } from "./tools/lookTypeGeneratorDialog.js";
@@ -42,6 +43,7 @@ const HANDLERS = {
     "file.open":       () => doOpen(),
     "file.compile":    () => doCompile(),
     "file.compileAs":  () => doCompileAs(),
+    "file.merge":      () => doMerge(),
     "file.close":      () => doClose(),
 
     "edit.undo": () => { if (canUndo()) undo(); },
@@ -93,6 +95,19 @@ async function doCompileAs() {
         const out = await showCompileAsDialog();
         if (out) reportStatus(`Compiled as ${out.version.valueStr}.`);
     } catch (err) { console.error("[menu] compileAs failed", err); reportStatus(`Compile As failed: ${err.message}`); }
+}
+
+async function doMerge() {
+    if (!getState().project) { await showNoProjectDialog("Merge"); return; }
+    try {
+        const out = await showMergeDialog();
+        if (out) {
+            reportStatus(
+                `Merged — +${out.itemsCount} items, +${out.outfitsCount} outfits, ` +
+                `+${out.effectsCount} effects, +${out.missilesCount} missiles, +${out.spritesCount} sprites.`
+            );
+        }
+    } catch (err) { console.error("[menu] merge failed", err); reportStatus(`Merge failed: ${err.message}`); }
 }
 
 async function doClose() {

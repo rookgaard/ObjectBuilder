@@ -77,17 +77,21 @@ has all landed. See `PLAN.md` "Stages 14–24" for the full audit and commits:
 
 ## Non-UI follow-ups
 
-- [ ] **File → Merge… / Merge Client Files** — merge another client DAT/SPR
-      pair into the currently loaded project. AS3 flow opens a
-      `MergeAssetsWindow`, selects a second client folder/files, detects
-      version/options (`extended`, `transparency`, `improvedAnimations`), then
-      `ClientMerger` loads that second client, optionally runs sprite
-      optimization, appends all non-empty source sprites to the current SPR,
-      remaps every source object `spriteIndex` to those new sprite ids, and
-      appends non-empty source items/outfits/effects/missiles to the ends of
-      the current DAT lists. Needs browser multi-file picker equivalent,
-      progress/status reporting, dirty-state refresh, and tests covering
-      sprite id remapping plus FrameGroup outfit sprite indices.
+- [x] **File → Merge… / Merge Client Files** — merge another client DAT/SPR
+      pair into the currently loaded project. Done (2026-06-05):
+      `src/app/mergeProject.js` (`mergeClientFiles` orchestrator +
+      pure `mergeClient`), `src/ui/dialogs/mergeDialog.js` (multi-file picker
+      with signature-based dat/spr auto-classify, version dropdown,
+      extended/transparency/improvedAnimations/frameGroups + "Optimize sprites
+      before merge" checkbox), wired into `File → Merge…` in `src/ui/menu.js`.
+      Loads the second client, optionally runs the sprite optimizer on it,
+      appends non-empty source sprites to the current SPR, remaps every source
+      object `spriteIndex` (and per-FrameGroup spriteIndex) to the new ids, and
+      appends non-empty items/outfits/effects/missiles to the ends of the DAT
+      lists; single `markProjectDirty()` refresh + status report. Plan/commit
+      split avoids partial mutation, with a u16 overflow preflight (sprite +
+      per-category counts) and pre-10.57-outfit→frameGroups normalization.
+      Tests: `tests/app/mergeProject.test.js`.
       *AS3 ref: `ObjectBuilder.mxml::mergeProject`,
       `ob/components/MergeAssetsWindow.mxml`,
       `otlib/utils/ClientMerger.as`.*

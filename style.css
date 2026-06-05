@@ -203,16 +203,6 @@ h1, h2, h3, h4 {
     cursor: progress;
 }
 
-.toolbar__btn--is-dev {
-    background: #2f4a6b;
-    border-color: #3e6694;
-    color: #fff;
-}
-
-.toolbar__btn--is-dev:hover {
-    background: #3e6694;
-}
-
 .toolbar__glyph {
     font-size: 13px;
     line-height: 1;

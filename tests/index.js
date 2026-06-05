@@ -8,6 +8,7 @@ import "./core/spriteRle.test.js";
 import "./core/thingType.test.js";
 
 import "./app/spritesOptimizer.test.js";
+import "./app/mergeProject.test.js";
 
 import "./formats/datLoader.test.js";
 import "./formats/sprFile.test.js";

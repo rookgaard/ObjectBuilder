@@ -1,7 +1,6 @@
 // Top toolbar — chunky buttons for the most common File-menu actions.
 
 import { STRINGS } from "./strings.js";
-import { loadReferenceProject, REFERENCE_PROJECTS } from "../app/loadProject.js";
 import { compileAndDownload } from "../app/compileProject.js";
 import { showOpenDialog }      from "./dialogs/openDialog.js";
 import { showNewDialog }       from "./dialogs/newDialog.js";
@@ -26,20 +25,7 @@ const BUTTONS = [
     { id: "find",    label: "Find",    glyph: "🔍" },
     { id: "undo",    label: "Undo",    glyph: "↶"  },
     { id: "redo",    label: "Redo",    glyph: "↷"  },
-    { sep: true },
-    ...REFERENCE_PROJECTS.map((ref) => ({
-        id: ref.id,
-        label: ref.label,
-        glyph: "⚡",
-        modifier: "is-dev",
-        ref,
-    })),
 ];
-
-// data-cmd ("toolbar.<id>") → reference fixture descriptor.
-const REF_BY_CMD = new Map(
-    REFERENCE_PROJECTS.map((ref) => [`toolbar.${ref.id}`, ref])
-);
 
 export function renderToolbar($host) {
     const $bar = $('<ul class="toolbar" role="toolbar" aria-label="Main toolbar"></ul>');
@@ -142,33 +128,6 @@ function runToolbarCommand(cmd, $btn) {
         } finally {
             $btn.prop("disabled", false);
         }
-        return;
-    }
-
-    const ref = REF_BY_CMD.get(cmd);
-    if (ref) {
-        const $status = $(".app-status");
-        $btn.prop("disabled", true);
-        $status.text(`Loading ${ref.dir} reference Tibia.dat + Tibia.spr…`);
-
-        loadReferenceProject(ref)
-            .then((project) => {
-                $status.text(
-                    `Loaded ${project.version.valueStr} — ` +
-                    `${project.dat.itemsCount} items, ` +
-                    `${project.dat.outfitsCount} outfits, ` +
-                    `${project.dat.effectsCount} effects, ` +
-                    `${project.dat.missilesCount} missiles, ` +
-                    `${project.spr.spritesCount} sprites.`
-                );
-            })
-            .catch((err) => {
-                console.error("[toolbar] loadReferenceProject failed", err);
-                $status.text(`Load failed: ${err.message}`);
-            })
-            .finally(() => {
-                $btn.prop("disabled", false);
-            });
         return;
     }
 
