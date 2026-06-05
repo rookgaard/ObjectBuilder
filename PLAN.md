@@ -29,9 +29,9 @@ These are decided. No need to re-ask the user.
 
 ## Current focus
 
-> **Stages 14–19 — DONE** (2026-06-05). Cross-builder integration sweep —
+> **Stages 14–24 — DONE** (2026-06-05). Cross-builder integration sweep —
 > compared `builder1/2/3/4` (downstream forks of the AS3 source) and ported the
-> spec corrections + missing client configs:
+> spec corrections + missing client configs + UX touches:
 > - **step 14 — OBD import/export**: see Stage 13 block below for full detail
 >   (commit batched the OBD work + list thumbnails + preview polish from the
 >   previous session that hadn't been committed before /exit).
@@ -60,6 +60,35 @@ These are decided. No need to re-ask the user.
 >   touching `frameGroups[]`. `DatLoader` / `DatCompiler` auto-derive the flag
 >   from `version.value >= 1057`. Synthetic round-trip test:
 >   `tests/formats/frameGroups.test.js`.
+> - **step 20 — Find dialog new flags**: WRAPPABLE / UNWRAPPABLE / TOP_EFFECT /
+>   USABLE / HAS_BONES added to `BOOL_FIELDS` in `findDialog.js` so they appear
+>   as checkboxes in the Find dialog.
+> - **step 21 — Stand/Walking pose toggle**: `ThingDataView` distinguishes
+>   `rawThing` (underlying ThingType with `frameGroups[]`) from `displayThing`
+>   (a FrameGroup-substituted view). Adding `setPose(0|1)` swaps which group
+>   the preview canvas + Animator pull geometry / animation / spriteIndex from,
+>   so outfits 10.57+ can finally show their walking animation. Preview panel
+>   exposes a Stand / Walking button row when `rawThing.frameGroups.length > 1`.
+> - **step 22 — single multi-file Open picker**: one `<input type="file" multiple>`
+>   in the Open dialog handles both files at once. Classifies them by reading
+>   the first 4 bytes (matched against known dat/spr signatures from
+>   `versions.json`), falling back to the file extension. When the .dat signature
+>   matches a known entry the version dropdown is auto-selected. Shows a small
+>   "detected" panel summarising what was assigned to .dat / .spr + the matched
+>   version.
+> - **step 23 — gen 4 / 5 flag back-ports**: `MetadataFlags4.js` adds
+>   WRAPPABLE / UNWRAPPABLE / HAS_BONES; `MetadataFlags5.js` adds HAS_BONES.
+>   Matching reader cases + writer emissions added so custom 7.80–9.86 DATs
+>   that carry those flags decode + recode correctly. Mirrors builder4 (2023).
+> - **step 24 — OBD v3 codec**: outfit OBD files with `frameGroups` are now
+>   supported. `encodeObdPayloadV3` writes `u8 groupCount` + per-group
+>   `u8 groupType + …geometry/animation/spriteIndex…`; per-sprite layout adds
+>   `u32 dataSize` between id and pixel bytes (builder3 v3 layout). New
+>   `encodeObd()` wrapper auto-picks V3 for multi-group outfits, V2 otherwise;
+>   `decodeObd()` dispatches by reading the OBD-version u16. Import path
+>   handles both flat-array (V2) and per-group-map (V3) sprite payloads.
+>   Tests: `tests/formats/obdCodec.test.js` got a "OBD 3.0 codec" describe
+>   block covering 2-group outfit round-trip + auto-version selection.
 >
 > --- Stage 13 history (kept for reference) ---
 > **Stage 13 — DONE** (2026-06-05). OBD 2.0 single-object import/export:

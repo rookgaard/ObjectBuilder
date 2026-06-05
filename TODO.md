@@ -8,6 +8,19 @@ one focused stage / commit.
 Source attribution next to each item points at the CHANGELOG line that
 introduced it, so the AS3 implementation can be located for reference.
 
+## Already done (cross-referenced for completeness)
+
+The binary-format work that *was* needed for current-version client support
+has all landed. See `PLAN.md` "Stages 14–24" for the full audit and commits:
+
+- ✅ Gen 4 / 5 / 6 flag back-ports (WRAPPABLE / UNWRAPPABLE / TOP_EFFECT / HAS_BONES)
+- ✅ Signed offsets across gens 1–6 + OBD; `maxTextLength` split
+- ✅ `versions.json` extended to 12.90
+- ✅ FrameGroup (DEFAULT + WALKING) scaffold for outfits 10.57+
+- ✅ OBD v3 (outfit FrameGroups + per-sprite size prefix)
+- ✅ Stand / Walking pose toggle in preview
+- ✅ Single multi-file Open picker (auto-detect dat / spr + version)
+
 ## UI extras (mostly from builder4 0.5.8 – 0.6.0)
 
 - [ ] **Compare Objects** — multi-select two or more objects and open a
