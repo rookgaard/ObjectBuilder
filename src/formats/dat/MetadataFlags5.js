@@ -36,6 +36,9 @@ export const F = Object.freeze({
     IGNORE_LOOK:     0x1F,
     CLOTH:           0x20,
     MARKET_ITEM:     0x21,
+    // builder4 fork: bones back-ported into gen-5 so custom DAT files with
+    // bones in the 8.55–9.86 band still decode.
+    HAS_BONES:       0x27,
     LAST_FLAG:       0xFF,
 });
 export default F;

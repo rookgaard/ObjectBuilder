@@ -12,7 +12,16 @@ export function writeProperties(w, t) {
     if (t.hasLight)  { w.writeUint8(F.HAS_LIGHT);  w.writeUint16(t.lightLevel); w.writeUint16(t.lightColor); }
     if (t.hasOffset) { w.writeUint8(F.HAS_OFFSET); w.writeInt16(t.offsetX);     w.writeInt16(t.offsetY); }
     if (t.animateAlways) w.writeUint8(F.ANIMATE_ALWAYS);
+    if (t.hasBones) writeBones(w, t);
     w.writeUint8(F.LAST_FLAG);
+}
+
+function writeBones(w, t) {
+    w.writeUint8(F.HAS_BONES);
+    for (let d = 0; d < 4; d++) {
+        w.writeInt16(t.bonesOffsetX[d] | 0);
+        w.writeInt16(t.bonesOffsetY[d] | 0);
+    }
 }
 
 export function writeItemProperties(w, t) {
@@ -51,5 +60,8 @@ export function writeItemProperties(w, t) {
     if (t.isLensHelp)    { w.writeUint8(F.LENS_HELP); w.writeUint16(t.lensHelp); }
     if (t.isFullGround)  w.writeUint8(F.FULL_GROUND);
     if (t.ignoreLook)    w.writeUint8(F.IGNORE_LOOK);
+    if (t.wrappable)     w.writeUint8(F.WRAPPABLE);
+    if (t.unwrappable)   w.writeUint8(F.UNWRAPPABLE);
+    if (t.hasBones)      writeBones(w, t);
     w.writeUint8(F.LAST_FLAG);
 }

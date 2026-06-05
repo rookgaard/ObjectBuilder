@@ -46,6 +46,15 @@ export function readProperties(reader, type) {
             case F.LENS_HELP:       type.isLensHelp = true; type.lensHelp = reader.readUint16(); break;
             case F.FULL_GROUND:     type.isFullGround = true; break;
             case F.IGNORE_LOOK:     type.ignoreLook = true; break;
+            case F.WRAPPABLE:       type.wrappable = true; break;
+            case F.UNWRAPPABLE:     type.unwrappable = true; break;
+            case F.HAS_BONES:
+                type.hasBones = true;
+                for (let d = 0; d < 4; d++) {
+                    type.bonesOffsetX[d] = reader.readInt16();
+                    type.bonesOffsetY[d] = reader.readInt16();
+                }
+                break;
             default:
                 throw new Error(
                     `MetadataReader4: unknown flag 0x${flag.toString(16)} ` +

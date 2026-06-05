@@ -35,6 +35,12 @@ export const F = Object.freeze({
     LENS_HELP:       0x1E,
     FULL_GROUND:     0x1F,
     IGNORE_LOOK:     0x20,
+    // builder4 fork: these were back-ported into gen-4 so that custom
+    // 8.x DAT files which carry the bonuses still decode. Not used by stock
+    // 7.80–8.54 CipSoft files.
+    WRAPPABLE:       0x24,
+    UNWRAPPABLE:     0x25,
+    HAS_BONES:       0x27,
     LAST_FLAG:       0xFF,
 });
 export default F;
