@@ -2,7 +2,7 @@
 // version, then open them. AS3 reference: ob.components.OpenAssetsWindow.
 //
 // On success we read the two File objects as ArrayBuffers and feed them to
-// app/loadProject.buildProject — same path as the dev "Load 7.72" button.
+// app/loadProject.buildProject — same path as the dev reference-load buttons.
 
 import { showModal } from "../widgets/modal.js";
 import { loadVersions } from "../../app/loadProject.js";

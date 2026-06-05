@@ -1,7 +1,7 @@
 // Top toolbar — chunky buttons for the most common File-menu actions.
 
 import { STRINGS } from "./strings.js";
-import { loadReferenceProject } from "../app/loadProject.js";
+import { loadReferenceProject, REFERENCE_PROJECTS } from "../app/loadProject.js";
 import { compileAndDownload } from "../app/compileProject.js";
 import { showOpenDialog }      from "./dialogs/openDialog.js";
 import { showNewDialog }       from "./dialogs/newDialog.js";
@@ -27,8 +27,19 @@ const BUTTONS = [
     { id: "undo",    label: "Undo",    glyph: "↶"  },
     { id: "redo",    label: "Redo",    glyph: "↷"  },
     { sep: true },
-    { id: "loadRef", label: "Load 7.72 (dev)", glyph: "⚡", modifier: "is-dev" },
+    ...REFERENCE_PROJECTS.map((ref) => ({
+        id: ref.id,
+        label: ref.label,
+        glyph: "⚡",
+        modifier: "is-dev",
+        ref,
+    })),
 ];
+
+// data-cmd ("toolbar.<id>") → reference fixture descriptor.
+const REF_BY_CMD = new Map(
+    REFERENCE_PROJECTS.map((ref) => [`toolbar.${ref.id}`, ref])
+);
 
 export function renderToolbar($host) {
     const $bar = $('<ul class="toolbar" role="toolbar" aria-label="Main toolbar"></ul>');
@@ -71,11 +82,35 @@ function runToolbarCommand(cmd, $btn) {
     if (cmd === "toolbar.redo") { if (canRedo()) redo(); return; }
 
     if (cmd === "toolbar.new") {
-        showNewDialog().catch((err) => console.error("[toolbar] new failed", err));
+        const $status = $(".app-status");
+        $btn.prop("disabled", true);
+        $status.text("Creating new project...");
+        showNewDialog()
+            .then((project) => {
+                $status.text(project ? `New project — ${project.version.valueStr}.` : "New project cancelled.");
+            })
+            .catch((err) => {
+                console.error("[toolbar] new failed", err);
+                $status.text(`New failed: ${err.message}`);
+            })
+            .finally(() => $btn.prop("disabled", false));
         return;
     }
     if (cmd === "toolbar.open") {
-        showOpenDialog().catch((err) => console.error("[toolbar] open failed", err));
+        const $status = $(".app-status");
+        $btn.prop("disabled", true);
+        $status.text("Opening project...");
+        showOpenDialog()
+            .then((project) => {
+                $status.text(project
+                    ? `Opened ${project.version.valueStr} — ${project.dat.itemsCount} items, ${project.spr.spritesCount} sprites.`
+                    : "Open cancelled.");
+            })
+            .catch((err) => {
+                console.error("[toolbar] open failed", err);
+                $status.text(`Open failed: ${err.message}`);
+            })
+            .finally(() => $btn.prop("disabled", false));
         return;
     }
     if (cmd === "toolbar.find") {
@@ -110,12 +145,13 @@ function runToolbarCommand(cmd, $btn) {
         return;
     }
 
-    if (cmd === "toolbar.loadRef") {
+    const ref = REF_BY_CMD.get(cmd);
+    if (ref) {
         const $status = $(".app-status");
         $btn.prop("disabled", true);
-        $status.text("Loading reference Tibia.dat + Tibia.spr…");
+        $status.text(`Loading ${ref.dir} reference Tibia.dat + Tibia.spr…`);
 
-        loadReferenceProject()
+        loadReferenceProject(ref)
             .then((project) => {
                 $status.text(
                     `Loaded ${project.version.valueStr} — ` +
