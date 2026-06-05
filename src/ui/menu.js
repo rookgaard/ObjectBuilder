@@ -17,6 +17,7 @@ import { showNewDialog }        from "./dialogs/newDialog.js";
 import { showCompileAsDialog }  from "./dialogs/compileAsDialog.js";
 import { showFindDialog }       from "./tools/findDialog.js";
 import { showLookTypeGeneratorDialog } from "./tools/lookTypeGeneratorDialog.js";
+import { showObjectViewerDialog } from "./tools/objectViewerDialog.js";
 import { showSlicerDialog }     from "./tools/slicerDialog.js";
 import { compileAndDownload }   from "../app/compileProject.js";
 import { loadVersions }         from "../app/loadProject.js";
@@ -46,6 +47,7 @@ const HANDLERS = {
 
     "tools.find":   () => showFindDialog().catch((e) => console.error("[menu] find failed", e)),
     "tools.lookGenerator": () => showLookTypeGeneratorDialog().catch((e) => console.error("[menu] look generator failed", e)),
+    "tools.objectViewer": () => showObjectViewerDialog().catch((e) => console.error("[menu] object viewer failed", e)),
     "tools.slicer": () => showSlicerDialog().catch((e) => console.error("[menu] slicer failed", e)),
 
     "window.log":      () => showLogWindow().catch((e) => console.error("[menu] log failed", e)),

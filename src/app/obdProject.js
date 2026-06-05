@@ -118,7 +118,7 @@ function prepareObdThing(data, spr) {
             const list = data.sprites[key];
             const fg = thing.frameGroups?.[groupType];
             if (!fg || !Array.isArray(list)) continue;
-            const remapped = remapSpriteList(list, project.spr);
+            const remapped = remapSpriteList(list, spr);
             fg.spriteIndex = remapped.ids;
             spritesAdded += remapped.added;
         }
