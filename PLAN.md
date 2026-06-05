@@ -1,23 +1,48 @@
 # ObjectBuilder-JS — Rewrite Plan
 
 This is the rolling, resumable plan for porting Object Builder (Adobe AIR / Flex / ActionScript 3)
-to a TypeScript single-page web app. Keep this file up to date — *every time a stage closes or the
+to a browser-only single-page app. Keep this file up to date — *every time a stage closes or the
 next sub-task changes, edit "Current focus" below first, then update the relevant stage section*.
 
 Reference AS3 source: `../ObjectBuilder-AS/src/`.
+
+## Locked technical choices
+
+These are decided. No need to re-ask the user.
+
+- **Stack**: plain HTML + CSS + ES modules. **jQuery 4.0.0** (pinned, via `code.jquery.com` CDN)
+  for DOM/UI. Do not bump the jQuery version without owner sign-off.
+- **No build tool, no transpiler.** Files served as-is by any static HTTP server
+  (`python -m http.server 8000` or `npx serve .`). `file://` won't work because of ES modules.
+- **Language**: vanilla JavaScript (ES2022+). No TypeScript, no JSX.
+- **UI strings**: English only (matches AS3 default).
+- **Project owner ↔ Claude communication language**: Polish. Committed files stay English.
+- **Test files for 7.72**: `references/Tibia.dat` + `references/Tibia.spr` (gitignored).
+  Signatures: dat `0x439D5A33`, spr `0x439852BE`. 5157 items, 254 outfits, 26 effects, 16 missiles,
+  10423 sprites (non-extended u16). These signatures match the AS3 `value=770 "7.70"` entry; the
+  bytes use generation-3 layout (covered by `MetadataReader3`). Listed in `versions.json` as
+  `value: 772, valueStr: "7.72"` so the dropdown reads "7.72" as the user expects.
 
 ---
 
 ## Current focus
 
-> **Stage 0** — project scaffold not started yet. The repository folder `ObjectBuilder-JS/` exists
-> and currently only contains `CLAUDE.md` and this `PLAN.md`.
+> **Stage 0 — DONE** (2026-06-05). Scaffold in place: `index.html` (jQuery 4.0.0 from CDN +
+> `src/app/main.js` as module), `style.css` (dark `#494949` theme), six stub modules across
+> `src/{core,formats,store,workers,ui,app}/`, `public/versions.json` (79 rows, 7.72 at top),
+> `.editorconfig`. Smoke-tested via `python -m http.server 8765`: HTTP 200 on `/`, `/style.css`,
+> `/src/app/main.js`, `/public/versions.json`; JSON parses with 79 entries, first row
+> `7.72 / 0x439D5A33`.
 >
-> **Next concrete step**: scaffold a Vite + TypeScript project in this directory (`npm create vite@latest .
-> -- --template vanilla-ts`), then commit an empty `src/core/`, `src/formats/`, `src/store/`,
-> `src/ui/`, `src/app/`, `public/` tree to lock in the layered architecture from CLAUDE.md.
+> **Now active: Stage 1 — UI shell mock**.
 >
-> Update this section the moment Stage 0 finishes.
+> **Next concrete step**: build the 4-column main layout (Preview / Object list / ThingType Editor
+> / Sprite list) inside `<main id="app">` in `index.html`, styled by `style.css`, plus draggable
+> splitters. Implement splitter drag as a small jQuery module in `src/ui/splitter.js`
+> (mousedown on a 5 px handle, capture mousemove on `document`, release on mouseup). No data wired
+> in yet — that's the next sub-task.
+>
+> Update this section the moment a sub-task closes.
 
 ---
 
@@ -29,7 +54,7 @@ strict priority — don't start stage N+1 until N "exit criteria" are green.
 
 | #  | Stage                                                              | Why this order                                                                                |
 | -- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| 0  | Project scaffold (Vite + TS + lint + folder layout)                | Cheap; locks the architecture in place before any real code.                                  |
+| 0  | Static scaffold (index.html + jQuery CDN + src/ tree)              | Cheap; locks the architecture in place before any real code.                                  |
 | 1  | UI shell (4-panel layout, menu, toolbar) with mock data            | User's first ask. Lets us iterate on look & feel without binary formats blocking us.          |
 | 2  | Binary I/O primitives + Sprite RLE codec (pure-core, unit-tested)  | Needed by every later stage. Easy to test in isolation against fixtures.                      |
 | 3  | Load Tibia 7.72 `.dat` + `.spr` end-to-end, **read-only**          | The user's "first concrete version" milestone. Exercises stages 1 + 2.                        |
@@ -61,23 +86,39 @@ strict priority — don't start stage N+1 until N "exit criteria" are green.
 
 ---
 
-## Stage 0 — Project scaffold
+## Stage 0 — Static scaffold
 
 **Exit criteria**
-- `package.json`, `tsconfig.json`, `vite.config.ts`, `.eslintrc`, `.prettierrc` in place.
-- `npm run dev` serves a blank page. `npm run build` succeeds. `npm run typecheck` succeeds.
-- Folder skeleton: `src/{core,formats,store,workers,ui,app}/index.ts` (empty re-exports), `public/`.
-- Vitest configured for `src/core` and `src/formats` (these layers should be pure / no DOM).
+- `index.html` at repo root: loads jQuery latest from a CDN (with SRI hash) and
+  `<script type="module" src="./src/app/main.js">`. Shows a placeholder "ObjectBuilder-JS" header so
+  we can verify the page boots.
+- `style.css` at repo root, linked from `index.html`. Empty body rule + the placeholder header
+  styles only.
+- Folder skeleton:
+  `src/core/index.js`, `src/formats/index.js`, `src/store/index.js`, `src/workers/index.js`,
+  `src/ui/index.js`, `src/app/main.js`. Each is a stub module that just `console.log`s its own name
+  on import so we can confirm everything loads.
+- `public/versions.json` — ported from `ObjectBuilder-AS/src/firstRun/versions.xml`, with one extra
+  row at the top for our reference files:
+  `{ "value": 772, "valueStr": "7.72", "datSignature": "0x439D5A33", "sprSignature": "0x439852BE", "otbVersion": 0 }`.
+- `.editorconfig` (4-space indent, LF line endings, UTF-8) matching AS3 repo style.
+- `python -m http.server 8000` then visiting <http://localhost:8000/> shows the placeholder header
+  and the browser console logs the six module names.
 
 **Sub-tasks**
-- [ ] `npm create vite@latest . -- --template vanilla-ts`
-- [ ] Add ESLint + Prettier configs.
-- [ ] Add Vitest.
-- [ ] Commit folder skeleton with placeholder `index.ts` in each layer.
-- [ ] Add `.editorconfig` matching the AS3 repo style (4-space, LF).
+- [x] Write `index.html` with jQuery 4.0.0 `<script src="https://code.jquery.com/jquery-4.0.0.min.js">`
+      + module entry. (SRI hash optional; if added, grab the current value from
+      https://releases.jquery.com/jquery/ — don't make one up.)
+- [x] Write `style.css` with body reset and placeholder header style.
+- [x] Create six stub `index.js` / `main.js` files.
+- [x] Convert `firstRun/versions.xml` → `public/versions.json` (JSON array of version objects, sigs
+      stored as `"0x…"` strings to preserve the AS3 hex casing). Insert the 7.72 row at the top.
+- [x] Add `.editorconfig`.
+- [x] Smoke test with `python -m http.server`: GET /, /style.css, /src/app/main.js,
+      /public/versions.json — all 200; versions.json parses with 79 entries, first = 7.72.
 
-**Resume hint**: if this stage is partial, check whether `package.json` exists; if not, start from
-`npm create vite@…`. If yes, jump to whichever sub-task is unchecked.
+**Resume hint**: if this stage is partial, check whether `index.html` exists; if not, start from
+the first sub-task. If yes, jump to whichever sub-task is unchecked.
 
 ---
 
@@ -96,44 +137,57 @@ objects so we can iterate on layout, drag-to-resize, panel toggles, theming.
 - Looks readable at the original AS3 minimum window of 800×600 and scales up.
 
 **Sub-tasks**
-- [ ] Decide framework: Lit / Preact / React / vanilla — **ask user before committing.** (Default
-      recommendation: Preact + signals — light, no JSX-pragma drama, plays nicely with Web Workers.)
-- [ ] Build the 4-column layout component with draggable splitters.
-- [ ] Mock data: 3 items, 1 outfit, 1 effect, 1 missile.
-- [ ] Ports of `Toolbar.as` + native menu schema.
-- [ ] ThingType Editor tabbed panel (three tabs visible, mock fields).
-- [ ] Hook up View → toggle panel visibility.
+- [ ] Build the 4-column layout in `index.html` markup, styled by `style.css`.
+- [ ] Draggable splitters between the four columns. Implement with jQuery (`mousedown`/`mousemove`
+      on a 5px-wide handle div, no jQuery UI dependency).
+- [ ] Mock data module `src/app/mockData.js` exporting 3 items, 1 outfit, 1 effect, 1 missile (each
+      a partial `ThingType`-shaped object).
+- [ ] Top toolbar (`src/ui/toolbar.js`) — buttons for New / Open / Compile / Save / etc. Port of
+      `Toolbar.as`. Buttons are stubs (`alert('TODO')`).
+- [ ] Top menu bar (`src/ui/menu.js`) — File / Edit / View / Tools / Window / Help with the same
+      items as `ob/menu/Menu.as`. Items are stubs.
+- [ ] ThingType Editor tabbed panel (`src/ui/editor/index.js`) — three tabs visible: **Texture**,
+      **Properties**, **Flags**. Inside each tab show static mock fields for now.
+- [ ] Hook up View menu → toggle panel visibility (jQuery `.toggle()`).
+- [ ] Theme: dark, mimicking the AS3 #494949 background. No light/dark toggle in MVP.
 - [ ] Quick a11y pass: labels, focus order, keyboard tabs.
-
-**Decisions to surface to user**: framework choice, dark theme like the AS3 app (#494949) or modern
-light/dark toggle.
 
 ---
 
 ## Stage 2 — Binary I/O primitives + RLE codec
 
-Pure ES modules in `src/core/`. No DOM. Fully unit-tested.
+Pure ES modules in `src/core/`. No DOM. No jQuery. Tested through a simple in-browser test runner
+served at `tests.html` (no Vitest, no Node — we just open `tests.html`, it loads each test module
+and prints PASS/FAIL into the page).
 
 **Files to create**
-- `core/binary/BinaryReader.ts` — wraps `DataView`, little-endian, with cursor + `readUint8/16/32`,
-  `readInt8/16/32`, `readBytes(n)`, `bytesAvailable`, `position` getter/setter.
-- `core/binary/BinaryWriter.ts` — same API mirrored for writing; backed by a growable `Uint8Array`.
-- `core/sprites/spriteRle.ts` — port of `Sprite.compressPixels` / `uncompressPixels`. Two modes:
+- `src/core/binary/BinaryReader.js` — wraps `DataView`, little-endian, with cursor +
+  `readUint8/16/32`, `readInt8/16/32`, `readBytes(n)`, `bytesAvailable`, `position` getter/setter.
+- `src/core/binary/BinaryWriter.js` — same API mirrored for writing; backed by a growable
+  `Uint8Array` (double-grow strategy).
+- `src/core/sprites/spriteRle.js` — port of `Sprite.compressPixels` / `uncompressPixels`. Two modes:
   `transparent: false` (no alpha byte) and `transparent: true` (4th byte per colored pixel).
-- `core/sprites/spritePixels.ts` — conversions between Flash-order `A R G B` (decoded buffer) and
-  HTML `ImageData` `R G B A`.
-- `core/things/ThingType.ts` — the 75+ field record + `clone()`, `getSpriteIndex()`,
-  `getSpriteSheetSize()`. Pure data class.
-- `core/things/ThingCategory.ts` — string enum + `value <-> name` helpers.
-- `core/things/ThingProperty.ts` — `{ property: string; value: unknown }`.
-- `core/core/Version.ts` — `{ value, valueStr, datSignature, sprSignature, otbVersion }`.
-- `core/animation/FrameDuration.ts`.
+- `src/core/sprites/spritePixels.js` — conversions between Flash-order `A R G B` (decoded buffer)
+  and HTML `ImageData` `R G B A`.
+- `src/core/things/ThingType.js` — the 75+ field record + `clone()`, `getSpriteIndex()`,
+  `getSpriteSheetSize()`. Plain JS class.
+- `src/core/things/ThingCategory.js` — string constants `ITEM`/`OUTFIT`/`EFFECT`/`MISSILE` +
+  `value <-> name` helpers.
+- `src/core/things/ThingProperty.js` — `{ property, value }` factory.
+- `src/core/Version.js` — `{ value, valueStr, datSignature, sprSignature, otbVersion }`.
+- `src/core/animation/FrameDuration.js`.
+
+**Testing harness**
+- `tests.html` at repo root — loads jQuery + the test modules and prints results.
+- `tests/runner.js` — tiny `assert`/`describe`/`it` shim (~50 lines) writing to the page.
+- `tests/core/binary.test.js`, `tests/core/spriteRle.test.js`, `tests/core/thingType.test.js`.
+- Open <http://localhost:8000/tests.html>; all rows must be green before closing the stage.
 
 **Exit criteria**
-- Unit tests pass for: read/write round-trip on `u8/u16/u32/i8/i16/i32`, RLE encode→decode round
-  trip of (a) a fully transparent sprite, (b) a fully opaque sprite, (c) a sprite with mixed
-  transparent and colored runs, (d) the alert sprite from `assets/`.
-- `getSpriteIndex` matches AS3 output on a hand-computed case.
+- Round-trip tests pass for `u8/u16/u32/i8/i16/i32` reader/writer.
+- RLE encode→decode round trip passes for: (a) fully transparent sprite, (b) fully opaque sprite,
+  (c) mixed runs sprite, (d) the alert sprite PNG decoded into pixels and back.
+- `getSpriteIndex` matches a hand-computed AS3 result for one outfit and one item.
 
 **Resume hint**: AS3 reference for RLE: `ObjectBuilder-AS/src/otlib/sprites/Sprite.as` lines
 ~197–309. Copy the algorithm; don't re-derive.
@@ -145,43 +199,37 @@ Pure ES modules in `src/core/`. No DOM. Fully unit-tested.
 Targets `MetadataReader3` band (7.55–7.72).
 
 **Files to create**
-- `formats/dat/MetadataFlags3.ts` — flag-byte constants (port of `MetadataFlags3.as`).
-- `formats/dat/MetadataReader.ts` — base class with `readTexturePatterns()` (port of
+- `src/formats/dat/MetadataFlags3.js` — flag-byte constants (port of `MetadataFlags3.as`).
+- `src/formats/dat/MetadataReader.js` — base class with `readTexturePatterns()` (port of
   `MetadataReader.as`).
-- `formats/dat/MetadataReader3.ts` — generation-3 flag dispatch (port of `MetadataReader3.as`).
-- `formats/dat/DatLoader.ts` — top-level: read signature, counts, then per-category lists.
-- `formats/spr/SprLoader.ts` — port of `SpriteStorage.onLoad` + `SpriteReader.readSprite`.
-- `store/ThingTypeStorage.ts` — holds `Map<id, ThingType>` per category, dispatches the right
+- `src/formats/dat/MetadataReader3.js` — generation-3 flag dispatch (port of `MetadataReader3.as`).
+- `src/formats/dat/DatLoader.js` — top-level: read signature, counts, then per-category lists.
+- `src/formats/spr/SprLoader.js` — port of `SpriteStorage.onLoad` + `SpriteReader.readSprite`.
+- `src/store/ThingTypeStorage.js` — holds a `Map<id, ThingType>` per category, dispatches the right
   reader based on `Version.value`.
-- `store/SpriteStorage.ts` — holds `Map<id, Sprite>`; lazy reads from a kept `ArrayBuffer`.
-- `app/loadProject.ts` — accepts `File` objects (dat, spr) + selected `Version`, returns a populated
-  storage pair.
-- `public/versions.json` — ported from `firstRun/versions.xml`.
+- `src/store/SpriteStorage.js` — holds `Map<id, Sprite>`; lazy reads from a kept `ArrayBuffer` for
+  sprites not yet accessed.
+- `src/app/loadProject.js` — accepts `File` objects (dat, spr) + selected `Version`, returns a
+  populated storage pair via Promise.
+- (Already created in Stage 0:) `public/versions.json` with the 7.72 row at the top.
 
 **UI integration**
-- Replace mock data wiring with a "File → Open" dialog that asks the user for `.dat` and `.spr`
-  files and a version from the dropdown. (7.72 specifically isn't in the AS3 `versions.xml` —
-  closest stock entry is 770/"7.70". Add a 772 entry to `versions.json` if the user has files with
-  different signatures; the AS3 app autodetects via signature match.)
+- Replace mock data wiring with a "File → Open" dialog: a jQuery modal that exposes two
+  `<input type="file" accept=".dat">` / `.spr` fields and the version dropdown populated from
+  `public/versions.json`. Reading with `FileReader.readAsArrayBuffer()`.
+- When the user has the File System Access API, prefer `window.showOpenFilePicker` for a smoother
+  native dialog; otherwise fall back to the `<input>` flow.
+- For the test fixtures in `references/`, add a dev-only "Load reference 7.72" button so we don't
+  have to click through the dialog on every reload during development. The button reads via
+  `fetch('./references/Tibia.dat')` and `fetch('./references/Tibia.spr')` — works as long as the
+  static server serves the `references/` folder. Remove this button once we're past Stage 7.
 
 **Exit criteria**
-- Open a known-good `Tibia.dat` + `Tibia.spr` (any 7.55–7.72), see the item count match the AS3
-  app's display, see a hand-picked item ID render in the preview.
+- "Load reference 7.72" reads both files and the UI displays itemsCount=5157, outfitsCount=254,
+  effectsCount=26, missilesCount=16 — matching the header inspection in CLAUDE.md.
+- A hand-picked item (e.g. id=100) renders its sprite in the preview canvas.
 - No JS errors, no NaN sprite coordinates.
 - DAT file is consumed fully (`bytesAvailable == 0` at end) — same invariant the AS3 enforces.
-
-**Open question for the user**: do they have actual 7.72 files? If yes, log their `.dat`/`.spr`
-signatures here so we know what to enter in `versions.json`:
-
-```
-{
-  "value": 772,
-  "valueStr": "7.72",
-  "datSignature": "0x________",   // TODO fill from real file
-  "sprSignature": "0x________",
-  "otbVersion": 0
-}
-```
 
 ---
 
@@ -203,10 +251,12 @@ This is mostly wiring Stage 3 storage into the Stage 1 UI.
 Port of `ThingDataView.as` + `otlib/animation/Animator.as`.
 
 **Files**
-- `ui/preview/SpriteSheet.ts` — composes a thing's sprites into one off-screen canvas.
-- `ui/preview/Animator.ts` — frame timing (`FrameDuration`, animationMode, loopCount).
-- `ui/preview/ThingDataView.tsx` (or framework equivalent) — renders the current frame at the
-  current `(layer, patternX, patternY, patternZ)`.
+- `src/ui/preview/SpriteSheet.js` — composes a thing's sprites into one off-screen `OffscreenCanvas`.
+- `src/ui/preview/Animator.js` — frame timing (`FrameDuration`, animationMode, loopCount) driven by
+  `requestAnimationFrame`.
+- `src/ui/preview/ThingDataView.js` — jQuery widget that owns a `<canvas>` and renders the current
+  frame at the current `(layer, patternX, patternY, patternZ)`. Exposes
+  `.thingData(t)`, `.play()`, `.stop()`, `.patternX(n)` chainable jQuery-style.
 
 **Exit criteria**
 - An outfit renders all 4 directions when patternX is scrubbed.
@@ -222,17 +272,17 @@ Port of `ThingDataView.as` + `otlib/animation/Animator.as`.
 In-memory only; no compile yet.
 
 **Files**
-- `ui/editor/TextureTab.tsx` — width/height/exactSize/layers/patternX/Y/Z/frames editors + sprite
+- `src/ui/editor/textureTab.js` — width/height/exactSize/layers/patternX/Y/Z/frames editors + sprite
   slot grid.
-- `ui/editor/PropertiesTab.tsx` — isGround/groundSpeed, hasLight/light, automap/minimap color,
+- `src/ui/editor/propertiesTab.js` — isGround/groundSpeed, hasLight/light, automap/minimap color,
   offset, elevation, cloth, market, writable, hasAction, lensHelp.
-- `ui/editor/FlagsTab.tsx` — checkbox grid of all booleans (gen-specific subset).
-- `store/undo.ts` — simple linear undo/redo stack of `(thingId, before, after)`.
+- `src/ui/editor/flagsTab.js` — checkbox grid of all booleans (gen-specific subset).
+- `src/store/undo.js` — simple linear undo/redo stack of `(thingId, before, after)`.
 
 **Exit criteria**
 - Toggling a flag updates the `ThingType` in storage.
 - Numeric edits are bounded and validated.
-- Undo / redo work across edits.
+- Undo / redo work across edits (Ctrl+Z / Ctrl+Y).
 - "Save" button on the editor commits changes (in-memory) and updates the preview.
 
 ---
@@ -242,11 +292,12 @@ In-memory only; no compile yet.
 Port of `MetadataWriter3` + `SpriteStorage.compile`.
 
 **Files**
-- `formats/dat/MetadataWriter.ts` — base + `writeTexturePatterns` (port of `MetadataWriter.as`).
-- `formats/dat/MetadataWriter3.ts` — generation-3 flag emission.
-- `formats/dat/DatCompiler.ts` — header + per-category loops.
-- `formats/spr/SprCompiler.ts` — header + offset table + sprite data writes.
-- `app/compileProject.ts` — produces two `Blob`s and triggers downloads.
+- `src/formats/dat/MetadataWriter.js` — base + `writeTexturePatterns` (port of `MetadataWriter.as`).
+- `src/formats/dat/MetadataWriter3.js` — generation-3 flag emission.
+- `src/formats/dat/DatCompiler.js` — header + per-category loops.
+- `src/formats/spr/SprCompiler.js` — header + offset table + sprite data writes.
+- `src/app/compileProject.js` — produces two `Blob`s and triggers downloads via a hidden
+  `<a download>` (or via the File System Access API `showSaveFilePicker` when available).
 
 **Exit criteria**
 - **Round-trip test**: load `Tibia.dat` + `Tibia.spr` 7.72, immediately recompile without any edit,
@@ -273,8 +324,9 @@ Port of `MetadataWriter3` + `SpriteStorage.compile`.
 ## Stage 9 — OBD single-object import/export
 
 OBD 2.0 layout is documented in `../ObjectBuilder-AS/OBD 2.0 Structure.txt`. Whole file is LZMA-
-compressed. The JS LZMA implementation: `lzma-js` or roll a small streaming decoder. Per-object
-content: client version, category, properties, patterns, then per-sprite ARGB pixels.
+compressed. To stay no-build we pull the LZMA decoder/encoder from a CDN as another `<script>` or
+ES-module import (e.g. `lzma1` or `lzma-purejs` published as an ES module). Per-object content:
+client version, category, properties, patterns, then per-sprite ARGB pixels.
 
 **Exit criteria**
 - Import an `.obd` exported by the AS3 app → appears in the right category in our UI.
@@ -302,11 +354,11 @@ Each generation also needs its corresponding UI tweaks: the flag checkboxes show
 
 ## Stage 11 — Helper tools
 
-- `ui/tools/FindWindow.tsx` — port of `FindWindow.mxml` (search by property/value).
-- `ui/tools/Slicer.tsx` — split a sprite sheet PNG into 32×32 tiles.
-- `ui/tools/AnimationEditor.tsx` — port of `com/mignari/animator/AnimationEditor.as`.
-- `ui/tools/LookGenerator.tsx` — port of `LookGenerator.mxml` (outfit colour preview).
-- `ui/tools/SpritesOptimizer.tsx` — port of `SpritesOptimizerWindow.mxml`.
+- `src/ui/tools/findWindow.js` — port of `FindWindow.mxml` (search by property/value).
+- `src/ui/tools/slicer.js` — split a sprite sheet PNG into 32×32 tiles.
+- `src/ui/tools/animationEditor.js` — port of `com/mignari/animator/AnimationEditor.as`.
+- `src/ui/tools/lookGenerator.js` — port of `LookGenerator.mxml` (outfit colour preview).
+- `src/ui/tools/spritesOptimizer.js` — port of `SpritesOptimizerWindow.mxml`.
 
 ---
 
@@ -319,10 +371,10 @@ Each generation also needs its corresponding UI tweaks: the flag checkboxes show
 
 ## Stage 13 — Polish
 
-- i18n (AS3 supports en/pl/pt — `ObjectBuilder-AS/locale/`). Port at least en + pl.
 - Keyboard shortcuts (AS3 list under `ObjectBuilder-AS/src/nail/menu`).
 - A11y audit.
 - Dark / light theme toggle.
+- i18n is **out of scope** for this port — UI stays English-only per project decision.
 
 ---
 
@@ -340,11 +392,20 @@ When tokens run out and a new session opens:
 
 ---
 
-## Open questions (resolve with user before committing implementation)
+## Resolved decisions log
 
-- **UI framework** (Stage 1): Preact (default rec) / Lit / React / vanilla DOM?
-- **Build tool**: Vite (default rec) / esbuild / Parcel?
-- **7.72 client files**: does the user have actual 7.72 `.dat`/`.spr` to test with? What are the
-  exact signatures from their files? (We may need a new `versions.json` row.)
-- **Language**: keep menus & error strings in English (port-friendly) or Polish (user's language)?
-- **OBD parsing**: pull in a JS LZMA library (`lzma-js`) or hand-roll? — defer to Stage 9.
+(Things that *were* open questions and are now locked. New questions go into "Current focus" so
+they're impossible to miss.)
+
+- **UI framework**: jQuery (CDN). No Preact/React/Lit/vanilla DOM. Decided 2026-06-05.
+- **jQuery version**: 4.0.0, pinned. Decided 2026-06-05 by project owner — do not bump without
+  sign-off.
+- **Build tool**: none. Static HTML + ES modules + jQuery from CDN. Decided 2026-06-05.
+- **Language**: TypeScript dropped; plain ES2022 JavaScript. Decided 2026-06-05.
+- **UI strings**: English only. Decided 2026-06-05.
+- **Documentation language**: English-only in committed files; Polish only in live conversation.
+  Decided 2026-06-05.
+- **7.72 client files**: provided by project owner at `references/Tibia.dat` + `references/Tibia.spr`.
+  Signatures dat=`0x439D5A33`, spr=`0x439852BE`, counts 5157/254/26/16, 10423 sprites. These
+  signatures are bytewise identical to AS3's `value=770 "7.70"` entry. Confirmed 2026-06-05.
+- **OBD parsing**: defer to Stage 9; pull an LZMA decoder from a CDN as an ES module then.

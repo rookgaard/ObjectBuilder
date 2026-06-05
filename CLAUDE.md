@@ -159,49 +159,113 @@ Tools (Find, Look Generator, Object Viewer, Slicer, Animation Editor, Sprites Op
 
 ## Target architecture (JS)
 
+**No build tool.** Plain HTML + CSS + ES modules served as static files. **jQuery 4.0.0** for DOM
+and UI plumbing, pulled from `https://code.jquery.com/jquery-4.0.0.min.js` in `index.html`. The
+version is **locked** — do not bump without the project owner's sign-off; 4.0.0 dropped support for
+several legacy APIs that 3.x still carried, so a downgrade could mask bugs we'd need to fix later.
+Modern browsers (Chromium/Firefox/Safari latest) are the only target — we rely on
+`<script type="module">`, `DataView`, `Uint8Array`, `OffscreenCanvas`, and (where available) the
+File System Access API.
+
 Layered the same way as the AS3 code:
 
 ```
+index.html         // entry; loads jQuery from CDN + src/app/main.js as a module
+style.css          // global styles
 src/
-  core/            // pure ES modules, no DOM: BinaryReader/Writer, RLE codec, ThingType,
-                   // ThingProperty, Version, format constants, sprite-index math
+  core/            // pure ES modules, NO jQuery, NO DOM: BinaryReader/Writer, RLE codec,
+                   // ThingType, ThingProperty, Version, format constants, sprite-index math
   formats/         // DAT (MetadataReader/Writer × 6 generations), SPR loader/compiler, OBD codec
-  store/           // ThingTypeStorage, SpriteStorage — mutable, event-emitting
+  store/           // ThingTypeStorage, SpriteStorage — mutable; emit jQuery events on a $bus
   workers/         // optional: load/compile inside a Web Worker (mirrors ObjectBuilderWorker)
-  ui/              // framework code; renders panels (preview, lists, editor)
-  app/             // wires UI to store + workers
-public/            // versions.json, icons, alert sprite
+  ui/              // jQuery widgets that render panels (preview, lists, editor)
+  app/             // main.js entry; wires UI to store + workers
+public/
+  versions.json    // ported from AS3 firstRun/versions.xml
+  assets/          // alert sprite PNG, icons (lifted from ObjectBuilder-AS/assets)
+references/        // user's local Tibia.dat / Tibia.spr for testing (gitignored)
 ```
 
 The AS3 app communicates UI ↔ a worker through "commands" (`LoadFilesCommand`, `GetThingCommand`,
-`UpdateThingCommand`, …). The JS port keeps the same command shape so each AS3 command maps 1:1 to a
-TS function or worker message — makes the port mechanical.
+`UpdateThingCommand`, …). The JS port keeps the same command shape: each AS3 command maps 1:1 to a
+plain JS function (synchronous, in the main thread) or — once introduced — to a worker `postMessage`
+payload. This keeps the port mechanical.
+
+### Running locally
+
+There is no `npm install` and no compile step. Any static-file server works:
+
+```
+python -m http.server 8000      # or:  npx serve .
+```
+
+Then open <http://localhost:8000/>. Opening `index.html` via `file://` will NOT work because ES
+modules require an HTTP origin.
 
 ## Conventions for this port
 
-- **TypeScript** for everything in `src/`. Strict mode.
-- **No backend.** Everything runs in the browser. File access via
-  `<input type="file">`, drag-drop, or the File System Access API where available.
+- **Plain JavaScript** (ES2022+). No TypeScript, no JSX, no transpilers, no bundlers.
+- **jQuery 4.0.0** (pinned, from `code.jquery.com` CDN) is the *only* runtime dependency. Used
+  for: DOM construction, event delegation, the cross-module event bus, simple show/hide animations.
+  Not used inside `src/core/` or `src/formats/` (those stay pure so they can run in a Web Worker
+  later). Don't introduce jQuery plugins without a discussion first.
+- **ES modules** (`<script type="module">`); `import`/`export` everywhere in `src/`. No globals
+  except `window.jQuery` / `window.$` from the CDN.
+- **No backend.** Everything runs in the browser. File access via `<input type="file">`, drag-drop,
+  or the File System Access API where available. Output via `Blob` + `URL.createObjectURL` +
+  programmatic `<a download>` click.
 - **No Flash/BitmapData abstractions** — render through `<canvas>` `ImageData`, and keep raw pixel
   buffers as `Uint8Array` / `Uint8ClampedArray`.
+- **UI language is English** (matches AS3 default). Strings live in `src/ui/strings.js`, ready for
+  later i18n but no language switcher in MVP.
 - **Match the AS3 binary layout byte-for-byte.** When in doubt, the reference is the AS3 file in
-  `../ObjectBuilder-AS/src/...` — cite that path next to non-obvious code.
+  `../ObjectBuilder-AS/src/...` — cite that path in a comment next to non-obvious code.
 - **Endianness is always little-endian** for `.dat` / `.spr`.
-- Keep `core/` free of DOM and framework imports so it can run in a Web Worker.
+- Keep `core/` free of DOM, jQuery, and framework imports so it can run in a Web Worker.
 - Don't add features that aren't in the AS3 app yet; the AS3 behavior is the spec.
+- **Documentation (`*.md`) is written in English only.** Conversation with the project owner is in
+  Polish; that does not leak into committed files.
+
+## Reference test files
+
+The user keeps a working `Tibia.dat` + `Tibia.spr` pair under `references/` (gitignored). Read at
+project start, header reports:
+
+| File        | Bytes    | Header field                             | Value                       |
+| ----------- | -------- | ---------------------------------------- | --------------------------- |
+| `Tibia.dat` | 186 653  | signature (u32, LE)                      | `0x439D5A33`                |
+|             |          | itemsCount  (u16)                        | 5157 (ids 100..5157)        |
+|             |          | outfitsCount (u16)                       | 254  (ids 1..254)           |
+|             |          | effectsCount (u16)                       | 26                          |
+|             |          | missilesCount (u16)                      | 16                          |
+| `Tibia.spr` | 14 583 074 | signature (u32, LE)                    | `0x439852BE`                |
+|             |          | spritesCount (u16, non-extended)         | 10423                       |
+
+Those signatures are bit-for-bit the AS3 `versions.xml` entry for **value=770 / "7.70"** — there is
+no distinct 7.72 entry in the stock AS3 list, and the dat/spr in `references/` self-identify as the
+7.70 generation. `MetadataReader3` (which covers the 7.55–7.72 band) is the correct decoder either
+way. We surface this file as `value: 772, valueStr: "7.72"` in `public/versions.json` with the same
+signatures (user calls them 7.72) so the version dropdown shows what the user expects.
 
 ## Status
 
 - [x] Analyzed AS3 source, mapped UI + binary formats.
-- [ ] Project scaffold (build tool, TS config, lint).
+- [x] Identified `references/Tibia.dat` + `Tibia.spr` signatures (gen 3 / 7.55–7.72 band).
+- [x] Stage 0 — Static project scaffold (index.html + jQuery 4.0.0, style.css, src/ layout,
+      public/versions.json, .editorconfig; smoke-tested via http.server).
 - [ ] Stage 1 — UI shell mock (no data).
-- [ ] Stage 2 — Load Tibia 7.72 (`.dat` + `.spr`) end-to-end, read-only.
-- [ ] Stage 3 — Browse the four categories (lists + numeric stepper).
-- [ ] Stage 4 — Edit attributes + flags, save in memory.
-- [ ] Stage 5 — Add / duplicate / remove objects + sprites.
-- [ ] Stage 6 — Re-compile `.dat` + `.spr` and download.
-- [ ] Stage 7 — Add support for more version generations.
-- [ ] Stage 8 — OBD import/export, Animation Editor, Slicer, Look Generator.
+- [ ] Stage 2 — Binary I/O primitives + sprite RLE codec (testable in browser).
+- [ ] Stage 3 — Load Tibia 7.72 (`.dat` + `.spr`) end-to-end, read-only.
+- [ ] Stage 4 — Browse the four categories (lists + numeric stepper).
+- [ ] Stage 5 — Live preview + animation rendering.
+- [ ] Stage 6 — Edit attributes + flags, in-memory.
+- [ ] Stage 7 — Re-compile `.dat` + `.spr` and download.
+- [ ] Stage 8 — Add / duplicate / remove objects + sprites.
+- [ ] Stage 9 — OBD single-object import/export.
+- [ ] Stage 10 — Support more version generations (7.10–7.50, 7.80+).
+- [ ] Stage 11 — Helper tools (Find, Slicer, Animation Editor, Look Generator).
+- [ ] Stage 12 — Persistence (OPFS / localStorage).
+- [ ] Stage 13 — Polish (keyboard shortcuts, a11y, theming).
 
 Detailed roadmap & resume points: see [PLAN.md](./PLAN.md).
 
