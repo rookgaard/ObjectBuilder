@@ -2,7 +2,7 @@
 // into the current project.
 
 import { downloadBytes } from "./compileProject.js";
-import { getState, getSelectedThing, addThing } from "../store/index.js";
+import { getState, getSelectedThing, addThing, replaceThing } from "../store/index.js";
 import {
     collectObdSprites,
     collectObdSpritesByGroup,
@@ -54,10 +54,59 @@ export async function importObdFile(file) {
     return importObdData(data);
 }
 
+export async function replaceSelectedThingFromObdFilePicker() {
+    const file = await pickObdFile();
+    if (!file) return null;
+    return replaceSelectedThingFromObdFile(file);
+}
+
+export async function replaceSelectedThingFromObdFile(file) {
+    const project = getState().project;
+    if (!project) throw new Error("No project loaded");
+
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const codec = await getLzmaCodec();
+    const data = await decodeObd(bytes, codec);
+    return replaceSelectedThingFromObdData(data);
+}
+
 export function importObdData(data) {
     const project = getState().project;
     if (!project) throw new Error("No project loaded");
 
+    const { thing, spritesAdded } = prepareObdThing(data, project.spr);
+    const id = addThing(thing.category, thing);
+    return { id, category: thing.category, spritesAdded, clientVersion: data.clientVersion, thing };
+}
+
+export function replaceSelectedThingFromObdData(data) {
+    const project = getState().project;
+    const current = getSelectedThing();
+    if (!project || !current) throw new Error("No object selected");
+    if (data.thing.category !== current.category) {
+        throw new Error(`Cannot replace ${current.category} ${current.id} with ${data.thing.category} OBD`);
+    }
+
+    const before = current.clone();
+    const { thing, spritesAdded } = prepareObdThing(data, project.spr);
+    thing.id = current.id;
+    thing.category = current.category;
+
+    if (!replaceThing(current.category, thing)) {
+        throw new Error(`Could not replace ${current.category} ${current.id}`);
+    }
+
+    return {
+        id: thing.id,
+        category: thing.category,
+        spritesAdded,
+        clientVersion: data.clientVersion,
+        before,
+        thing,
+    };
+}
+
+function prepareObdThing(data, spr) {
     const thing = data.thing.clone();
     let spritesAdded = 0;
 
@@ -84,8 +133,7 @@ export function importObdData(data) {
         spritesAdded = remapped.added;
     }
 
-    const id = addThing(thing.category, thing);
-    return { id, category: thing.category, spritesAdded, clientVersion: data.clientVersion };
+    return { thing, spritesAdded };
 }
 
 function remapSpriteList(sprites, spr) {

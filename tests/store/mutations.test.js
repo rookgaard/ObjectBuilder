@@ -3,16 +3,20 @@
 
 import { describe, it, assert, assertEqual } from "../runner.js";
 import {
+    EVENTS,
     setProject,
     getState,
     addThing,
     duplicateThing,
+    replaceThing,
     removeThing,
     addSprite,
+    replaceSprite,
     removeSprite,
     countFor,
     listFor,
     setSelectedCategory,
+    on,
 } from "../../src/store/index.js";
 import { ThingType } from "../../src/core/things/ThingType.js";
 import { Version } from "../../src/core/Version.js";
@@ -25,7 +29,7 @@ function fakeProject() {
     const effects  = new Map([[1, make(1, "effect")]]);
     const missiles = new Map([[1, make(1, "missile")]]);
 
-    // Minimal stub for the spr side (Stage-8 mutations only need addSprite / removeSprite).
+    // Minimal stub for the spr side (Stage-8 mutations only need add/replace/remove).
     let spritesCount = 5;
     const overlay = new Map();
     const spr = {
@@ -36,6 +40,11 @@ function fakeProject() {
             spritesCount++;
             overlay.set(spritesCount, pixels || new Uint8Array(SPRITE_BYTES));
             return spritesCount;
+        },
+        replaceSprite(id, pixels) {
+            if (id <= 0 || id > spritesCount) return false;
+            overlay.set(id, pixels || new Uint8Array(SPRITE_BYTES));
+            return true;
         },
         removeSprite(id) {
             const prev = overlay.get(id) ?? new Uint8Array(SPRITE_BYTES);
@@ -62,6 +71,19 @@ describe("addThing / duplicateThing / removeThing", () => {
         assert(listFor(getState().project.dat, "item").has(103), "map has 103");
     });
 
+    it("addThing emits PROJECT_CHANGE so virtual lists can rebuild", () => {
+        setProject(fakeProject());
+        setSelectedCategory("outfit");
+        let calls = 0;
+        on(EVENTS.PROJECT_CHANGE, () => calls++);
+        const before = calls;
+
+        const newId = addThing("outfit");
+
+        assertEqual(newId, 2);
+        assert(calls > before, "PROJECT_CHANGE fired after addThing");
+    });
+
     it("duplicateThing clones the source at a fresh id", () => {
         setProject(fakeProject());
         setSelectedCategory("item");
@@ -69,6 +91,20 @@ describe("addThing / duplicateThing / removeThing", () => {
         assertEqual(newId, 103);
         const map = listFor(getState().project.dat, "item");
         assertEqual(map.get(103).spriteIndex[0], 100, "cloned spriteIndex carried over");
+    });
+
+    it("replaceThing keeps the id and emits PROJECT_CHANGE", () => {
+        setProject(fakeProject());
+        const replacement = ThingType.create(101, "item");
+        replacement.marketName = "Replacement";
+        let calls = 0;
+        on(EVENTS.PROJECT_CHANGE, () => calls++);
+        const before = calls;
+
+        assertEqual(replaceThing("item", replacement), true);
+
+        assert(calls > before, "PROJECT_CHANGE fired after replaceThing");
+        assertEqual(listFor(getState().project.dat, "item").get(101).marketName, "Replacement");
     });
 
     it("removeThing on the highest id decrements the count", () => {
@@ -98,6 +134,15 @@ describe("addSprite / removeSprite (SprFile overlay)", () => {
         const id = addSprite();
         assertEqual(id, 6);
         assertEqual(getState().project.spr.spritesCount, 6);
+    });
+
+    it("replaceSprite returns previous pixels and marks the selected sprite", () => {
+        setProject(fakeProject());
+        const pixels = new Uint8Array(SPRITE_BYTES);
+        pixels[0] = 255;
+        const before = replaceSprite(1, pixels);
+        assert(before, "previous pixels returned");
+        assertEqual(getState().selectedSpriteId, 1);
     });
 
     it("removeSprite on the highest id decrements; in the middle blanks", () => {

@@ -49,6 +49,11 @@ export function setProject(project) {
     bus.trigger(EVENTS.SELECTION_CHANGE, [state]);
 }
 
+function notifyProjectMutation() {
+    bus.trigger(EVENTS.PROJECT_CHANGE, [state.project]);
+    bus.trigger(EVENTS.SELECTION_CHANGE, [state]);
+}
+
 export function setSelectedCategory(category) {
     if (state.selectedCategory === category) return;
     state.selectedCategory = category;
@@ -99,7 +104,7 @@ export function replaceThing(category, thing) {
     thing.category = category;
     map.set(thing.id, thing);
     p.dirty = true;
-    bus.trigger(EVENTS.SELECTION_CHANGE, [state]);
+    notifyProjectMutation();
     return true;
 }
 
@@ -121,7 +126,7 @@ export function addThing(category, thing = null) {
     p.dirty = true;
     state.selectedCategory = category;
     state.selectedThingId = newId;
-    bus.trigger(EVENTS.SELECTION_CHANGE, [state]);
+    notifyProjectMutation();
     return newId;
 }
 
@@ -150,7 +155,7 @@ export function removeThing(category, id) {
         map.set(id, ThingType.create(id, category));
     }
     p.dirty = true;
-    bus.trigger(EVENTS.SELECTION_CHANGE, [state]);
+    notifyProjectMutation();
     return removed;
 }
 
@@ -185,8 +190,25 @@ export function addSprite(pixels = null) {
     const id = spr.addSprite(pixels);
     p.dirty = true;
     state.selectedSpriteId = id;
-    bus.trigger(EVENTS.SELECTION_CHANGE, [state]);
+    notifyProjectMutation();
     return id;
+}
+
+/** Replace an existing sprite and return the previous pixels for callers that need undo data. */
+export function replaceSprite(id, pixels) {
+    const p = state.project;
+    if (!p) return null;
+    const spr = p.spr;
+    if (typeof spr.replaceSprite !== "function") {
+        throw new Error("SprFile does not support replace; upgrade Stage 8");
+    }
+    const previous = spr.getSpritePixels(id);
+    if (!previous) return null;
+    if (!spr.replaceSprite(id, pixels)) return null;
+    p.dirty = true;
+    state.selectedSpriteId = id;
+    notifyProjectMutation();
+    return new Uint8Array(previous);
 }
 
 /** Remove a sprite by id. */
@@ -199,7 +221,7 @@ export function removeSprite(id) {
     }
     const removed = spr.removeSprite(id);
     p.dirty = true;
-    bus.trigger(EVENTS.SELECTION_CHANGE, [state]);
+    notifyProjectMutation();
     return removed;
 }
 

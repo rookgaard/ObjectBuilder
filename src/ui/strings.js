@@ -17,8 +17,6 @@ export const STRINGS = {
                 compileAs: "Compile As…",
                 close: "Close",
                 merge: "Merge…",
-                preferences: "Preferences…",
-                exit: "Exit",
             },
         },
         edit: {
@@ -57,8 +55,6 @@ export const STRINGS = {
         help: {
             label: "Help",
             items: {
-                contents: "Contents",
-                checkForUpdates: "Check for Updates",
                 about: "About",
             },
         },

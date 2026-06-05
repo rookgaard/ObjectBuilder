@@ -10,6 +10,7 @@ import {
     on,
 } from "../../store/index.js";
 import { argbToImageData } from "../../core/sprites/spritePixels.js";
+import { replaceSelectedSpriteFromPngFilePicker } from "../../app/spriteProject.js";
 
 const $ = window.jQuery;
 
@@ -32,7 +33,7 @@ export function renderSpriteListPanel($host) {
 
             <section class="panel-section">
                 <div class="button-row">
-                    <button type="button" class="icon-button" title="Replace (TODO)">⤺</button>
+                    <button type="button" class="icon-button" id="spr-btn-replace" title="Replace selected from PNG">⤺</button>
                     <button type="button" class="icon-button" title="Import (TODO)">⤓</button>
                     <button type="button" class="icon-button" title="Export (TODO)">⤒</button>
                     <button type="button" class="icon-button" title="Copy (TODO)">⧉</button>
@@ -55,6 +56,17 @@ export function renderSpriteListPanel($host) {
     $("#spr-btn-new").off("click").on("click", () => {
         const id = addSprite(null);
         if (id) pushEdit("sprite-add", { id });
+    });
+    $("#spr-btn-replace").off("click").on("click", async () => {
+        const $status = $(".app-status");
+        try {
+            $status.text("Replacing selected sprite from PNG...");
+            const out = await replaceSelectedSpriteFromPngFilePicker();
+            $status.text(out ? `Replaced sprite ${out.id}.` : "Sprite replace cancelled.");
+        } catch (err) {
+            console.error("[spriteList] sprite replace failed", err);
+            $status.text(`Sprite replace failed: ${err.message}`);
+        }
     });
     $("#spr-btn-remove").off("click").on("click", () => {
         const id = getState().selectedSpriteId;

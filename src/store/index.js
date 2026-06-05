@@ -16,6 +16,7 @@ export {
     duplicateThing,
     removeThing,
     addSprite,
+    replaceSprite,
     removeSprite,
     listFor,
     countFor,

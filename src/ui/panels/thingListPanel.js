@@ -13,7 +13,11 @@ import {
 } from "../../store/index.js";
 import { createVirtualList } from "../widgets/virtualList.js";
 import { addThing, duplicateThing, removeThing } from "../../store/index.js";
-import { exportSelectedThingToObd, importObdFromFilePicker } from "../../app/obdProject.js";
+import {
+    exportSelectedThingToObd,
+    importObdFromFilePicker,
+    replaceSelectedThingFromObdFilePicker,
+} from "../../app/obdProject.js";
 import { drawFrame, compositeSize } from "../preview/SpriteSheet.js";
 
 const $ = window.jQuery;
@@ -42,7 +46,7 @@ export function renderThingListPanel($host) {
 
             <section class="panel-section">
                 <div class="button-row">
-                    <button type="button" class="icon-button" title="Replace (TODO)">⤺</button>
+                    <button type="button" class="icon-button" id="thing-btn-replace" title="Replace selected from OBD">⤺</button>
                     <button type="button" class="icon-button" id="thing-btn-import" title="Import OBD">⤓</button>
                     <button type="button" class="icon-button" id="thing-btn-export" title="Export selected as OBD">⤒</button>
                     <button type="button" class="icon-button" title="Edit (select & edit in middle panel)">✎</button>
@@ -108,6 +112,30 @@ function bindControls() {
         if (s.selectedThingId == null) return;
         const before = removeThing(s.selectedCategory, s.selectedThingId);
         if (before) pushEdit("thing-remove", { category: s.selectedCategory, id: before.id, before });
+    });
+    $("#thing-btn-replace").off("click").on("click", async () => {
+        const $status = $(".app-status");
+        try {
+            $status.text("Replacing selected object from OBD...");
+            const out = await replaceSelectedThingFromObdFilePicker();
+            if (!out) {
+                $status.text("OBD replace cancelled.");
+                return;
+            }
+            pushEdit("thing-edit", {
+                category: out.category,
+                id: out.id,
+                before: out.before,
+                after: out.thing.clone(),
+            });
+            $status.text(
+                `Replaced ${out.category} ${out.id} from OBD; ` +
+                `${out.spritesAdded} sprite${out.spritesAdded === 1 ? "" : "s"} added.`
+            );
+        } catch (err) {
+            console.error("[thingList] OBD replace failed", err);
+            $status.text(`OBD replace failed: ${err.message}`);
+        }
     });
     $("#thing-btn-export").off("click").on("click", async () => {
         const $status = $(".app-status");

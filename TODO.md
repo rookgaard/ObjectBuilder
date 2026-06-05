@@ -20,6 +20,8 @@ has all landed. See `PLAN.md` "Stages 14–24" for the full audit and commits:
 - ✅ OBD v3 (outfit FrameGroups + per-sprite size prefix)
 - ✅ Stand / Walking pose toggle in preview
 - ✅ Single multi-file Open picker (auto-detect dat / spr + version)
+- ✅ Object Replace from OBD (selected object slot keeps its id)
+- ✅ PNG replace for the selected sprite
 
 ## UI extras (mostly from builder4 0.5.8 – 0.6.0)
 
@@ -80,11 +82,6 @@ has all landed. See `PLAN.md` "Stages 14–24" for the full audit and commits:
       layout via a separate flag. Needs research on the actual binary
       change.
       *AS3 ref: builder3 changelog 0.5.4.*
-
-- [ ] **PNG replace** — replace a sprite directly from a PNG file (without
-      going through the slicer). The slicer covers many-tile import; this
-      is single-sprite drag-drop / file picker.
-      *AS3 ref: builder4 changelog 0.5.8.*
 
 - [ ] **Export All** — single button on Objects / Sprites panels that
       exports every entry at once without manual multi-select.

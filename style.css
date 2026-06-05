@@ -136,6 +136,16 @@ h1, h2, h3, h4 {
     color: #fff;
 }
 
+.menu__item:disabled {
+    color: #777;
+    cursor: default;
+}
+
+.menu__item:disabled:hover {
+    background: transparent;
+    color: #777;
+}
+
 .menu__item.is-checked::before {
     content: "✓";
     position: absolute;
@@ -896,6 +906,10 @@ body.is-splitter-dragging {
     max-height: 90vh;
 }
 
+.modal-card:has(.menu-window) {
+    max-width: min(92vw, 820px);
+}
+
 .modal-card__header {
     padding: 10px 14px;
     background: #2d2d2d;
@@ -923,6 +937,67 @@ body.is-splitter-dragging {
     flex-direction: row;
     align-items: center;
     gap: 6px;
+}
+
+.menu-window {
+    min-width: min(72vw, 760px);
+}
+
+.menu-window--about {
+    min-width: 360px;
+}
+
+.menu-window--about h3 {
+    font-size: 15px;
+}
+
+.menu-window--about p {
+    margin: 0;
+    color: #d8d8d8;
+}
+
+.menu-window__summary {
+    color: #b8b8b8;
+    font-size: 12px;
+}
+
+.menu-window__table-wrap {
+    max-height: 420px;
+    overflow: auto;
+    border: 1px solid #1c1c1c;
+    background: #2f2f2f;
+}
+
+.menu-window__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.menu-window__table th,
+.menu-window__table td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #242424;
+    text-align: left;
+    vertical-align: top;
+}
+
+.menu-window__table th {
+    position: sticky;
+    top: 0;
+    background: #262626;
+    color: #f0f0f0;
+    z-index: 1;
+}
+
+.menu-window__table tr.is-active td {
+    background: #244c70;
+}
+
+.menu-window__empty {
+    color: #9a9a9a;
+    text-align: center;
 }
 
 .modal-card__footer {

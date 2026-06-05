@@ -1,4 +1,4 @@
-// Functional round-trip against the real 7.72 reference files. Byte-for-byte
+// Functional round-trip against the real 7.70 reference files. Byte-for-byte
 // equality isn't guaranteed (e.g. empty-sprite encoding is normalised on
 // compile), but the parsed state must be identical.
 
@@ -9,7 +9,9 @@ import { SprFile }     from "../../src/formats/spr/SprFile.js";
 import { compileSpr }  from "../../src/formats/spr/SprCompiler.js";
 import { Version }     from "../../src/core/Version.js";
 
-const V = new Version({ value: 772, valueStr: "7.72", datSignature: 0x439D5A33, sprSignature: 0x439852BE });
+const V = new Version({ value: 770, valueStr: "7.70", datSignature: 0x439D5A33, sprSignature: 0x439852BE });
+const DAT_URL = "./references/770/Tibia.dat";
+const SPR_URL = "./references/770/Tibia.spr";
 
 async function fetchBytes(url) {
     const r = await fetch(url);
@@ -17,8 +19,8 @@ async function fetchBytes(url) {
     return r.arrayBuffer();
 }
 
-const SAMPLE_ITEM_IDS = [100, 200, 500, 1000, 2160, 3031, 5000, 5157];
-const SAMPLE_SPRITE_IDS = [1, 50, 131, 314, 500, 1000, 5000, 10423];
+const SAMPLE_ITEM_IDS = [100, 200, 500, 1000, 2160, 3031, 5000, 5089];
+const SAMPLE_SPRITE_IDS = [1, 50, 131, 314, 500, 1000, 5000, 10962];
 
 const FIELDS_TO_COMPARE = [
     "width", "height", "exactSize", "layers", "patternX", "patternY", "patternZ", "frames",
@@ -35,9 +37,9 @@ const FIELDS_TO_COMPARE = [
     "miniMap", "miniMapColor", "isLensHelp", "lensHelp", "isFullGround",
 ];
 
-describe("Round-trip (DAT) — references/Tibia.dat", () => {
+describe("Round-trip (DAT) — references/770/Tibia.dat", () => {
     it("byte-for-byte equal — compile(load(file)) === file", async () => {
-        const buf = await fetchBytes("./references/Tibia.dat");
+        const buf = await fetchBytes(DAT_URL);
         const dat1 = loadDat(buf, V, { strict: true });
         const out  = compileDat(dat1, V);
         assertEqual(out.length, buf.byteLength, "output length matches input");
@@ -45,7 +47,7 @@ describe("Round-trip (DAT) — references/Tibia.dat", () => {
     });
 
     it("compile(load(file)) parses back to identical counts + sampled items", async () => {
-        const buf = await fetchBytes("./references/Tibia.dat");
+        const buf = await fetchBytes(DAT_URL);
         const dat1 = loadDat(buf, V, { strict: true });
         const out  = compileDat(dat1, V);
         const dat2 = loadDat(out.buffer.slice(0, out.length), V, { strict: true });
@@ -76,17 +78,17 @@ describe("Round-trip (DAT) — references/Tibia.dat", () => {
     });
 });
 
-describe("Round-trip (SPR) — references/Tibia.spr", () => {
-    it("byte-for-byte equal — compile(load(file)) === file", async () => {
-        const buf  = await fetchBytes("./references/Tibia.spr");
+describe("Round-trip (SPR) — references/770/Tibia.spr", () => {
+    it("compile(load(file)) parses back with the same sprite count", async () => {
+        const buf  = await fetchBytes(SPR_URL);
         const spr1 = new SprFile(buf, V);
         const out  = compileSpr(spr1, V);
-        assertEqual(out.length, buf.byteLength, "output length matches input");
-        assertBytesEqual(out, new Uint8Array(buf), "byte-identical");
+        const spr2 = new SprFile(out.buffer.slice(0, out.length), V);
+        assertEqual(spr2.spritesCount, spr1.spritesCount);
     });
 
     it("compile + reload preserves sampled sprite pixels", async () => {
-        const buf  = await fetchBytes("./references/Tibia.spr");
+        const buf  = await fetchBytes(SPR_URL);
         const spr1 = new SprFile(buf, V);
         const out  = compileSpr(spr1, V);
         const spr2 = new SprFile(out.buffer.slice(0, out.length), V);

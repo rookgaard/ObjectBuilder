@@ -3,15 +3,30 @@
 
 import { STRINGS } from "./strings.js";
 import { togglePanel, isPanelVisible } from "./layout.js";
-import { setProject, getState } from "../store/index.js";
+import {
+    setProject,
+    getState,
+    canUndo,
+    canRedo,
+    undo,
+    redo,
+    onUndoChange,
+} from "../store/index.js";
 import { showOpenDialog }       from "./dialogs/openDialog.js";
 import { showNewDialog }        from "./dialogs/newDialog.js";
 import { showCompileAsDialog }  from "./dialogs/compileAsDialog.js";
 import { showFindDialog }       from "./tools/findDialog.js";
 import { showSlicerDialog }     from "./tools/slicerDialog.js";
 import { compileAndDownload }   from "../app/compileProject.js";
+import { loadVersions }         from "../app/loadProject.js";
+import {
+    appendLog,
+    getLogEntries,
+    installConsoleLogCapture,
+} from "../app/sessionLog.js";
 
 const $ = window.jQuery;
+installConsoleLogCapture();
 
 // command id -> { label, handler }. Handler defaults to a TODO alert.
 const HANDLERS = {
@@ -24,14 +39,22 @@ const HANDLERS = {
     "file.compile":    () => doCompile(),
     "file.compileAs":  () => doCompileAs(),
     "file.close":      () => doClose(),
-    "file.exit":       () => console.info("[menu] File → Exit is a no-op in the browser."),
+
+    "edit.undo": () => { if (canUndo()) undo(); },
+    "edit.redo": () => { if (canRedo()) redo(); },
 
     "tools.find":   () => showFindDialog().catch((e) => console.error("[menu] find failed", e)),
     "tools.slicer": () => showSlicerDialog().catch((e) => console.error("[menu] slicer failed", e)),
+
+    "window.log":      () => showLogWindow().catch((e) => console.error("[menu] log failed", e)),
+    "window.versions": () => showVersionsWindow().catch((e) => console.error("[menu] versions failed", e)),
+
+    "help.about": () => showAboutWindow().catch((e) => console.error("[menu] about failed", e)),
 };
 
 function reportStatus(msg) {
     $(".app-status").text(msg);
+    appendLog("status", msg);
 }
 
 async function doNew() {
@@ -100,6 +123,122 @@ async function showNoProjectDialog(action) {
     });
 }
 
+async function showVersionsWindow() {
+    const { showModal } = await import("./widgets/modal.js");
+    let versions;
+    try {
+        versions = await loadVersions();
+    } catch (err) {
+        await showModal({
+            title: "Versions",
+            body: $(`<p>Could not load versions.json: ${escapeHtml(err.message)}</p>`),
+            buttons: [{ label: "OK", value: "ok", primary: true }],
+        });
+        return;
+    }
+
+    const current = getState().project?.version;
+    const rows = versions.map((v) => {
+        const active = current?.equals?.(v) || current?.valueStr === v.valueStr;
+        return `
+            <tr class="${active ? "is-active" : ""}">
+                <td>${escapeHtml(v.valueStr)}</td>
+                <td>${v.value}</td>
+                <td>${formatHex(v.datSignature)}</td>
+                <td>${formatHex(v.sprSignature)}</td>
+                <td>${v.otbVersion || ""}</td>
+            </tr>
+        `;
+    }).join("");
+
+    const body = $(`
+        <div class="menu-window menu-window--versions">
+            <div class="menu-window__summary">
+                ${versions.length} version${versions.length === 1 ? "" : "s"} loaded from public/versions.json.
+            </div>
+            <div class="menu-window__table-wrap">
+                <table class="menu-window__table">
+                    <thead>
+                        <tr>
+                            <th>Version</th>
+                            <th>Value</th>
+                            <th>DAT signature</th>
+                            <th>SPR signature</th>
+                            <th>OTB</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+        </div>
+    `);
+
+    await showModal({
+        title: "Versions",
+        body,
+        buttons: [{ label: "Close", value: "close", primary: true }],
+    });
+}
+
+async function showLogWindow() {
+    const { showModal } = await import("./widgets/modal.js");
+    const entries = getLogEntries();
+    const rows = entries.length
+        ? entries.map((e) => `
+            <tr>
+                <td>${formatTime(e.time)}</td>
+                <td>${escapeHtml(e.level)}</td>
+                <td>${escapeHtml(e.message)}</td>
+            </tr>
+        `).join("")
+        : `<tr><td colspan="3" class="menu-window__empty">No log entries yet.</td></tr>`;
+
+    const body = $(`
+        <div class="menu-window menu-window--log">
+            <div class="menu-window__summary">${entries.length} entr${entries.length === 1 ? "y" : "ies"} in this browser session.</div>
+            <div class="menu-window__table-wrap">
+                <table class="menu-window__table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Level</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+        </div>
+    `);
+
+    await showModal({
+        title: "Log",
+        body,
+        buttons: [{ label: "Close", value: "close", primary: true }],
+    });
+}
+
+async function showAboutWindow() {
+    const { showModal } = await import("./widgets/modal.js");
+    const project = getState().project;
+    const projectLine = project
+        ? `${escapeHtml(project.version.valueStr)} loaded: ${project.dat.itemsCount} items, ${project.dat.outfitsCount} outfits, ${project.dat.effectsCount} effects, ${project.dat.missilesCount} missiles, ${project.spr.spritesCount} sprites.`
+        : "No project loaded.";
+    const body = $(`
+        <div class="menu-window menu-window--about">
+            <h3>ObjectBuilder-JS</h3>
+            <p>Browser-based Object Builder port for Tibia DAT/SPR and OBD workflows.</p>
+            <p>${projectLine}</p>
+        </div>
+    `);
+
+    await showModal({
+        title: "About",
+        body,
+        buttons: [{ label: "Close", value: "close", primary: true }],
+    });
+}
+
 function syncViewItem(commandId, panelId) {
     togglePanel(panelId);
     const checked = isPanelVisible(panelId);
@@ -163,6 +302,8 @@ export function renderMenu($host) {
 
     // Initialize View item checks from current panel state.
     syncViewCheckedState();
+    syncUndoItems();
+    onUndoChange(syncUndoItems);
 }
 
 function buildItems(items, group) {
@@ -202,6 +343,18 @@ function syncViewCheckedState() {
     }
 }
 
+function syncUndoItems() {
+    const state = {
+        "edit.undo": canUndo(),
+        "edit.redo": canRedo(),
+    };
+    for (const [cmd, enabled] of Object.entries(state)) {
+        $(`.menu__item[data-cmd="${cmd}"]`)
+            .prop("disabled", !enabled)
+            .attr("aria-disabled", String(!enabled));
+    }
+}
+
 function runCommand(cmd) {
     const handler = HANDLERS[cmd];
     if (handler) {
@@ -210,4 +363,20 @@ function runCommand(cmd) {
     }
     // Default: log a TODO for stubbed items so we don't spam alert() boxes.
     console.info(`[menu] TODO: command "${cmd}" is not wired up yet.`);
+}
+
+function formatHex(value) {
+    return `0x${(value >>> 0).toString(16).toUpperCase().padStart(8, "0")}`;
+}
+
+function formatTime(value) {
+    return value.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
 }
