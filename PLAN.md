@@ -29,7 +29,36 @@ These are decided. No need to re-ask the user.
 
 ## Current focus
 
-> **Stage 3 — DONE** (2026-06-05). Real 7.72 files load end-to-end, read-only:
+> **Stage 4 — DONE** (2026-06-05). Full browsing on real data:
+> - `src/ui/widgets/virtualList.js` — fixed-row-height virtual scroller, renders only the visible
+>   window + buffer (default 6 rows above/below). Pure helpers `computeVisibleRange` /
+>   `scrollOffsetFor` exported for tests; the DOM-side `createVirtualList()` defers `window.jQuery`
+>   access until called so the pure helpers stay importable from Node.
+> - `src/ui/panels/thingListPanel.js` rewritten on top of the virtual list. Lists 100..5157 items,
+>   1..254 outfits etc. with zero perf cliff. Stepper clamps to `[minIdFor, maxIdFor]` of the
+>   current category. Keyboard nav on the focused list: Arrow Up/Down, PageUp/Down, Home, End.
+> - `src/ui/panels/editorPanel.js` rewritten with declarative tab specs. Three tabs (Texture,
+>   Properties, Flags) now reflect the selected `ThingType` in real time: numeric inputs show
+>   actual values, checkboxes match boolean flags. Sprite-index preview lists the first 16
+>   slot ids. Save/Close remain disabled (editing arrives in Stage 6); the editor status line
+>   reads "Read-only — <category> <id>".
+> - Tests: `tests/ui/virtualList.test.js` (pure window-math), `tests/store/projectStore.test.js`
+>   (selection invariants, event bus, min/max id helpers).
+> - Verified: 44 modules pass `node --check`; Node smoke confirms `computeVisibleRange` / `scrollOffsetFor`
+>   match expectations; in-browser runner picks up the two new suites.
+>
+> **Now active: Stage 5 — Live preview + animation rendering.**
+>
+> **Next concrete step**: open <http://127.0.0.1/tests.html> to confirm the green bar still
+> reflects all suites. Then port `otlib.components.ThingDataView` + `otlib.animation.Animator`
+> from AS3 into `src/ui/preview/{SpriteSheet,Animator,ThingDataView}.js`. The preview canvas
+> currently shows only `spriteIndex[0]`; it should compose the full sprite sheet (width × height
+> × layers, all `patternX/Y/Z`) and animate frames using `FrameDuration.getDefaultDuration`.
+> Replace the existing 32×32 placeholder canvas in `previewPanel.js` with the new ThingDataView
+> widget. Sprite assembly is the meaty part; animation timing is a `requestAnimationFrame` loop
+> that ticks per-frame.
+>
+> Update this section the moment a sub-task closes.
 > - `src/formats/dat/MetadataFlags3.js` + `MetadataReader.js` (base `readTexturePatterns`)
 >   + `MetadataReader3.js` (gen-3 flag dispatch with safety cap + AS3-style throw on unknown flag).
 > - `src/formats/dat/readerRegistry.js` — picks the reader by `version.value` band; gens 1/2/4/5/6
@@ -265,11 +294,11 @@ Targets `MetadataReader3` band (7.55–7.72).
 This is mostly wiring Stage 3 storage into the Stage 1 UI.
 
 **Exit criteria**
-- Category dropdown switches the list and the visible ID range
-  (items: 100..N, outfits/effects/missiles: 1..N).
-- Numeric stepper jumps to ID, list scrolls to it.
-- Selecting an entry populates Preview + ThingType Editor (read-only display first).
-- Sprite list shows the sprites referenced by the selected thing's `spriteIndex`.
+- [x] Category dropdown switches the list and the visible ID range
+      (items: 100..N, outfits/effects/missiles: 1..N).
+- [x] Numeric stepper jumps to ID, list scrolls to it (virtual list with `scrollToIndex`).
+- [x] Selecting an entry populates Preview + ThingType Editor (read-only display).
+- [x] Sprite list shows the sprites referenced by the selected thing's `spriteIndex`.
 
 ---
 

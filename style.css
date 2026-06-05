@@ -452,6 +452,59 @@ body.is-splitter-dragging {
     color: #fff;
 }
 
+/* ---- virtual list ------------------------------------------------ */
+
+.vlist {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    background: #2c2c2c;
+    border: 1px solid #1c1c1c;
+    border-radius: 3px;
+    min-height: 0;
+    outline: none;
+    position: relative;
+}
+
+.vlist:focus {
+    border-color: #1f6db3;
+}
+
+.vlist__spacer {
+    position: relative;
+    width: 100%;
+}
+
+.vlist__rows {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.vlist__row {
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    border-bottom: 1px solid #232323;
+    color: #d0d0d0;
+    font-size: 12px;
+    cursor: pointer;
+    box-sizing: border-box;
+    font-variant-numeric: tabular-nums;
+}
+
+.vlist__row:hover {
+    background: #3f3f3f;
+}
+
+.vlist__row.is-selected {
+    background: #1f6db3;
+    color: #fff;
+}
+
 /* ---- sprite grid -------------------------------------------------- */
 
 .sprite-grid {

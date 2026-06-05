@@ -6,26 +6,32 @@ import {
     listFor,
     countFor,
     minIdFor,
+    maxIdFor,
     setSelectedThingId,
     on,
 } from "../../store/index.js";
+import { createVirtualList } from "../widgets/virtualList.js";
 
 const $ = window.jQuery;
 
-const MAX_RENDERED = 200; // cheap windowing; full virtualization is Stage 4.
+const ROW_HEIGHT = 22;
+
+// Module-scoped because there's one Object panel per app.
+let vlist = null;
+let mode  = null; // "real" | "mock" — we recreate the renderer when this flips
 
 export function renderThingListPanel($host) {
     $host.empty().append(`
         <div class="panel-body">
             <section class="panel-section panel-section--grow">
                 <h3 class="panel-section__title" id="thing-list-title">${STRINGS.panels.objects}</h3>
-                <ul class="thing-list" id="thing-list" role="listbox" tabindex="0"></ul>
+                <div class="thing-list-host" id="thing-list-host" tabindex="0" role="listbox" aria-label="Object list"></div>
             </section>
 
             <section class="panel-section">
                 <label class="numeric-stepper">
                     <span class="numeric-stepper__label">ID</span>
-                    <input type="number" min="0" value="100" id="thing-id-input" class="control control--numeric">
+                    <input type="number" min="0" value="0" id="thing-id-input" class="control control--numeric">
                 </label>
             </section>
 
@@ -43,83 +49,139 @@ export function renderThingListPanel($host) {
         </div>
     `);
 
-    refreshList();
+    rebuildList();
+    bindControls();
 
-    $("#thing-list").off("click.thingList")
-        .on("click.thingList", ".thing-list__item", function () {
-            const id = Number($(this).attr("data-id"));
-            if (!Number.isNaN(id)) setSelectedThingId(id);
-        });
-
-    $("#thing-id-input").off("change.thingList input.thingList")
-        .on("change.thingList input.thingList", function () {
-            const id = Number($(this).val());
-            if (Number.isFinite(id)) setSelectedThingId(id);
-        });
-
-    on(EVENTS.PROJECT_CHANGE, () => refreshList());
-    on(EVENTS.SELECTION_CHANGE, () => refreshList());
+    on(EVENTS.PROJECT_CHANGE,   () => rebuildList());
+    on(EVENTS.SELECTION_CHANGE, () => syncListWithState());
 }
 
-function refreshList() {
+function bindControls() {
+    const $hostEl = $("#thing-list-host");
+
+    // Numeric stepper — clamped to category min/max, push into store.
+    $("#thing-id-input").off(".thingList")
+        .on("change.thingList input.thingList", function () {
+            const raw = Number($(this).val());
+            const cat = getState().selectedCategory;
+            const min = minIdFor(cat);
+            const max = Math.max(min, maxIdFor(cat));
+            if (!Number.isFinite(raw)) return;
+            const clamped = Math.min(max, Math.max(min, Math.floor(raw)));
+            if (clamped !== raw) $(this).val(clamped);
+            setSelectedThingId(clamped);
+        });
+
+    // Keyboard navigation on the focused list.
+    $hostEl.off("keydown.thingList").on("keydown.thingList", (e) => {
+        if (!vlist || vlist.total <= 0) return;
+        const cur = vlist.selectedIndex;
+        const last = vlist.total - 1;
+        let next = cur;
+        switch (e.key) {
+            case "ArrowDown": next = Math.min(last, (cur < 0 ? 0 : cur + 1)); break;
+            case "ArrowUp":   next = Math.max(0,    (cur < 0 ? 0 : cur - 1)); break;
+            case "PageDown":  next = Math.min(last, (cur < 0 ? 0 : cur + 10)); break;
+            case "PageUp":    next = Math.max(0,    (cur < 0 ? 0 : cur - 10)); break;
+            case "Home":      next = 0; break;
+            case "End":       next = last; break;
+            default: return;
+        }
+        e.preventDefault();
+        if (next !== cur) {
+            setSelectedThingId(indexToId(next));
+        }
+    });
+}
+
+function rebuildList() {
+    const $hostEl = $("#thing-list-host");
+    const $title  = $("#thing-list-title");
+    const $input  = $("#thing-id-input");
+
     const state    = getState();
     const project  = state.project;
     const category = state.selectedCategory;
-    const $list    = $("#thing-list");
-    const $title   = $("#thing-list-title");
-    const $input   = $("#thing-id-input");
-
-    let entries;
-    let totalCount;
 
     if (project) {
         const map = listFor(project.dat, category);
-        const minId = minIdFor(category);
-        totalCount = countFor(project.dat, category);
+        const min = minIdFor(category);
+        const max = maxIdFor(category);
+        const total = Math.max(0, max - min + 1);
 
-        // Window of MAX_RENDERED around the selected id.
-        const selectedId = state.selectedThingId ?? minId;
-        const halfWindow = Math.floor(MAX_RENDERED / 2);
-        const windowStart = Math.max(minId, selectedId - halfWindow);
-        const windowEnd   = Math.min(totalCount, windowStart + MAX_RENDERED - 1);
+        vlist = createVirtualList($hostEl, {
+            rowHeight: ROW_HEIGHT,
+            renderRow: (i) => {
+                const id = min + i;
+                const t = map.get(id);
+                if (!t) return `<span class="vlist__row-id">${id}</span> <span class="vlist__row-meta">(missing)</span>`;
+                return `<span class="vlist__row-id">${id}</span>`;
+            },
+        });
+        vlist.onSelect((index) => setSelectedThingId(indexToId(index)));
 
-        entries = [];
-        for (let id = windowStart; id <= windowEnd; id++) {
-            const thing = map.get(id);
-            entries.push({ id, label: thing ? `${id}` : `${id} (missing)` });
+        const selectedId = state.selectedThingId ?? min;
+        const idx = Math.max(0, Math.min(total - 1, selectedId - min));
+        vlist.setData(total, idx);
+        vlist.scrollToIndex(idx, "center");
+
+        const catLabel = STRINGS.categories[category] || category;
+        $title.text(`${catLabel}s (${total}, ids ${min}–${max})`);
+
+        $input.attr("min", min).attr("max", max).val(selectedId);
+        mode = "real";
+    } else {
+        // Mock fallback (before any project loaded).
+        const mockList = MOCK_THINGS[category] || [];
+        vlist = createVirtualList($hostEl, {
+            rowHeight: ROW_HEIGHT,
+            renderRow: (i) => {
+                const t = mockList[i];
+                return `<span class="vlist__row-id">${t.id}</span> <span class="vlist__row-meta">— ${t.name}</span>`;
+            },
+        });
+        vlist.onSelect((index) => setSelectedThingId(mockList[index].id));
+        vlist.setData(mockList.length, mockList.length ? 0 : -1);
+        const catLabel = STRINGS.categories[category] || category;
+        $title.text(`${catLabel}s (${mockList.length} mock)`);
+        $input.attr("min", 0).removeAttr("max").val(mockList[0]?.id ?? 0);
+        mode = "mock";
+    }
+}
+
+function syncListWithState() {
+    const state = getState();
+    const $input = $("#thing-id-input");
+
+    if (!vlist) return;
+
+    if (mode === "real") {
+        const project = state.project;
+        if (!project) { rebuildList(); return; }
+        const category = state.selectedCategory;
+        if ($("#thing-list-title").text().indexOf(STRINGS.categories[category]) === -1) {
+            // Category changed → rebuild renderer for the new map.
+            rebuildList();
+            return;
+        }
+        const min = minIdFor(category);
+        const idx = Math.max(0, Math.min(vlist.total - 1, (state.selectedThingId ?? min) - min));
+        vlist.setSelectedIndex(idx);
+        vlist.scrollToIndex(idx, "nearest");
+        if (Number($input.val()) !== state.selectedThingId) {
+            $input.val(state.selectedThingId);
         }
     } else {
-        const mockList = MOCK_THINGS[category] || [];
-        totalCount = mockList.length;
-        entries = mockList.map((t) => ({ id: t.id, label: `${t.id} — ${t.name}` }));
+        // mock — just re-render category lookup
+        rebuildList();
     }
+}
 
-    $list.empty();
-    const selectedId = state.selectedThingId;
-    for (const e of entries) {
-        const $li = $("<li>")
-            .addClass("thing-list__item")
-            .toggleClass("is-selected", e.id === selectedId)
-            .attr("data-id", e.id)
-            .text(e.label);
-        $list.append($li);
+function indexToId(index) {
+    const state = getState();
+    if (mode === "real") {
+        return minIdFor(state.selectedCategory) + index;
     }
-
-    const catLabel = STRINGS.categories[category] || category;
-    $title.text(project
-        ? `${catLabel}s (${totalCount}, showing ${entries.length})`
-        : `${catLabel}s (${totalCount} mock)`);
-
-    if (selectedId != null && Number($input.val()) !== selectedId) {
-        $input.val(selectedId);
-    }
-
-    // Scroll the selected row into view.
-    const $selected = $list.find(".thing-list__item.is-selected");
-    if ($selected.length) {
-        const elem = $selected[0];
-        if (typeof elem.scrollIntoView === "function") {
-            elem.scrollIntoView({ block: "nearest" });
-        }
-    }
+    const list = MOCK_THINGS[state.selectedCategory] || [];
+    return list[index]?.id ?? 0;
 }

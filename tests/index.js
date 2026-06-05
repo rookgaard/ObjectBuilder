@@ -11,4 +11,7 @@ import "./formats/datLoader.test.js";
 import "./formats/sprFile.test.js";
 import "./formats/integration_7_72.test.js";
 
+import "./ui/virtualList.test.js";
+import "./store/projectStore.test.js";
+
 run();

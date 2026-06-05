@@ -259,7 +259,8 @@ signatures (user calls them 7.72) so the version dropdown shows what the user ex
       FAIL runner at <http://127.0.0.1/tests.html>.
 - [x] Stage 3 — DAT gen-3 reader + SPR lazy reader + projectStore + UI "Load 7.72 (dev)" wires
       real counts/sprites into the shell. Integration tests against `references/Tibia.{dat,spr}`.
-- [ ] Stage 4 — Browse the four categories (virtualized list, real read-only editor display).
+- [x] Stage 4 — Virtual list for the Object panel, read-only editor bound to selected ThingType,
+      keyboard nav, stepper clamping, new test suites.
 - [ ] Stage 5 — Live preview + animation rendering.
 - [ ] Stage 6 — Edit attributes + flags, in-memory.
 - [ ] Stage 7 — Re-compile `.dat` + `.spr` and download.
