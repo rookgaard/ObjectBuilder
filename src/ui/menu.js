@@ -16,6 +16,7 @@ import { showOpenDialog }       from "./dialogs/openDialog.js";
 import { showNewDialog }        from "./dialogs/newDialog.js";
 import { showCompileAsDialog }  from "./dialogs/compileAsDialog.js";
 import { showFindDialog }       from "./tools/findDialog.js";
+import { showLookTypeGeneratorDialog } from "./tools/lookTypeGeneratorDialog.js";
 import { showSlicerDialog }     from "./tools/slicerDialog.js";
 import { compileAndDownload }   from "../app/compileProject.js";
 import { loadVersions }         from "../app/loadProject.js";
@@ -44,6 +45,7 @@ const HANDLERS = {
     "edit.redo": () => { if (canRedo()) redo(); },
 
     "tools.find":   () => showFindDialog().catch((e) => console.error("[menu] find failed", e)),
+    "tools.lookGenerator": () => showLookTypeGeneratorDialog().catch((e) => console.error("[menu] look generator failed", e)),
     "tools.slicer": () => showSlicerDialog().catch((e) => console.error("[menu] slicer failed", e)),
 
     "window.log":      () => showLogWindow().catch((e) => console.error("[menu] log failed", e)),
