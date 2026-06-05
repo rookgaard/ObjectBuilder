@@ -9,8 +9,10 @@ import {
     maxIdFor,
     setSelectedThingId,
     on,
+    pushEdit,
 } from "../../store/index.js";
 import { createVirtualList } from "../widgets/virtualList.js";
+import { addThing, duplicateThing, removeThing } from "../../store/index.js";
 
 const $ = window.jQuery;
 
@@ -37,13 +39,13 @@ export function renderThingListPanel($host) {
 
             <section class="panel-section">
                 <div class="button-row">
-                    <button type="button" class="icon-button" title="Replace">⤺</button>
-                    <button type="button" class="icon-button" title="Import">⤓</button>
-                    <button type="button" class="icon-button" title="Export">⤒</button>
-                    <button type="button" class="icon-button" title="Edit">✎</button>
-                    <button type="button" class="icon-button" title="Duplicate">⎘</button>
-                    <button type="button" class="icon-button" title="New">＋</button>
-                    <button type="button" class="icon-button" title="Remove">－</button>
+                    <button type="button" class="icon-button" title="Replace (TODO)">⤺</button>
+                    <button type="button" class="icon-button" title="Import (TODO)">⤓</button>
+                    <button type="button" class="icon-button" title="Export (TODO)">⤒</button>
+                    <button type="button" class="icon-button" title="Edit (select & edit in middle panel)">✎</button>
+                    <button type="button" class="icon-button" id="thing-btn-duplicate" title="Duplicate selected">⎘</button>
+                    <button type="button" class="icon-button" id="thing-btn-new"       title="New (blank)">＋</button>
+                    <button type="button" class="icon-button" id="thing-btn-remove"    title="Remove selected">－</button>
                 </div>
             </section>
         </div>
@@ -71,6 +73,25 @@ function bindControls() {
             if (clamped !== raw) $(this).val(clamped);
             setSelectedThingId(clamped);
         });
+
+    // Add / duplicate / remove buttons
+    $("#thing-btn-new").off("click").on("click", () => {
+        const cat = getState().selectedCategory;
+        const newId = addThing(cat);
+        if (newId) pushEdit("thing-add", { category: cat, id: newId });
+    });
+    $("#thing-btn-duplicate").off("click").on("click", () => {
+        const s = getState();
+        if (s.selectedThingId == null) return;
+        const newId = duplicateThing(s.selectedCategory, s.selectedThingId);
+        if (newId) pushEdit("thing-add", { category: s.selectedCategory, id: newId, source: s.selectedThingId });
+    });
+    $("#thing-btn-remove").off("click").on("click", () => {
+        const s = getState();
+        if (s.selectedThingId == null) return;
+        const before = removeThing(s.selectedCategory, s.selectedThingId);
+        if (before) pushEdit("thing-remove", { category: s.selectedCategory, id: before.id, before });
+    });
 
     // Keyboard navigation on the focused list.
     $hostEl.off("keydown.thingList").on("keydown.thingList", (e) => {

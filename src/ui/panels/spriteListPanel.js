@@ -4,6 +4,9 @@ import {
     getState,
     getSelectedThing,
     setSelectedSpriteId,
+    addSprite,
+    removeSprite,
+    pushEdit,
     on,
 } from "../../store/index.js";
 import { argbToImageData } from "../../core/sprites/spritePixels.js";
@@ -29,13 +32,13 @@ export function renderSpriteListPanel($host) {
 
             <section class="panel-section">
                 <div class="button-row">
-                    <button type="button" class="icon-button" title="Replace">⤺</button>
-                    <button type="button" class="icon-button" title="Import">⤓</button>
-                    <button type="button" class="icon-button" title="Export">⤒</button>
-                    <button type="button" class="icon-button" title="Copy">⧉</button>
-                    <button type="button" class="icon-button" title="Paste">⎘</button>
-                    <button type="button" class="icon-button" title="New">＋</button>
-                    <button type="button" class="icon-button" title="Remove">－</button>
+                    <button type="button" class="icon-button" title="Replace (TODO)">⤺</button>
+                    <button type="button" class="icon-button" title="Import (TODO)">⤓</button>
+                    <button type="button" class="icon-button" title="Export (TODO)">⤒</button>
+                    <button type="button" class="icon-button" title="Copy (TODO)">⧉</button>
+                    <button type="button" class="icon-button" title="Paste (TODO)">⎘</button>
+                    <button type="button" class="icon-button" id="spr-btn-new"    title="New (blank)">＋</button>
+                    <button type="button" class="icon-button" id="spr-btn-remove" title="Remove selected">－</button>
                 </div>
             </section>
         </div>
@@ -48,6 +51,17 @@ export function renderSpriteListPanel($host) {
             const id = Number($(this).val());
             if (Number.isFinite(id)) setSelectedSpriteId(id);
         });
+
+    $("#spr-btn-new").off("click").on("click", () => {
+        const id = addSprite(null);
+        if (id) pushEdit("sprite-add", { id });
+    });
+    $("#spr-btn-remove").off("click").on("click", () => {
+        const id = getState().selectedSpriteId;
+        if (!id) return;
+        const before = removeSprite(id);
+        if (before) pushEdit("sprite-remove", { id, before });
+    });
 
     on(EVENTS.PROJECT_CHANGE, refresh);
     on(EVENTS.SELECTION_CHANGE, refresh);

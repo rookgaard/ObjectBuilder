@@ -266,8 +266,9 @@ signatures (user calls them 7.72) so the version dropdown shows what the user ex
 - [x] Stage 6 — Editor edits flags/properties/texture, Save/Close + undo stack + Ctrl+Z/Ctrl+Y.
 - [x] Stage 7 — DAT + SPR compilers + Compile toolbar button + byte-identical round-trip
       against `references/Tibia.{dat,spr}` (186 KB / 14 MB).
-- [ ] Stage 8 — Add / duplicate / remove objects + sprites (wire the icon buttons + undo).
-- [ ] Stage 9 — OBD single-object import/export.
+- [x] Stage 8 — add/duplicate/remove for ThingType + add/remove sprite with overlay; icon
+      buttons + undo entries; round-trip preserved through SPR re-compile.
+- [ ] Stage 9 — OBD single-object import/export (LZMA-compressed `.obd`).
 - [ ] Stage 10 — Support more version generations (7.10–7.50, 7.80+).
 - [ ] Stage 11 — Helper tools (Find, Slicer, Animation Editor, Look Generator).
 - [ ] Stage 12 — Persistence (OPFS / localStorage).

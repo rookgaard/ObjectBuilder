@@ -52,6 +52,8 @@ export class SprFile {
 
         /** @type {Map<number, Uint8Array>} cache of decoded ARGB pixel buffers */
         this._cache = new Map();
+        /** @type {Map<number, Uint8Array>} write overlay (add / replace) */
+        this._overrides = new Map();
         // Sprite id 0 is canonical "blank" — never stored, always returns zeros.
         this._blank = new Uint8Array(SPRITE_BYTES);
     }
@@ -64,10 +66,16 @@ export class SprFile {
     /**
      * Returns the decoded 4096-byte ARGB pixel buffer for sprite `id`.
      * id == 0 ⇒ blank sprite. Out-of-range ids return null.
+     *
+     * The write overlay (from addSprite / replaceSprite) wins over the
+     * on-disk payload, so callers always see the latest in-memory state.
      */
     getSpritePixels(id) {
         if (id === 0) return this._blank;
         if (!this.hasSprite(id)) return null;
+
+        const overridden = this._overrides.get(id);
+        if (overridden) return overridden;
 
         const cached = this._cache.get(id);
         if (cached) return cached;
@@ -91,6 +99,50 @@ export class SprFile {
 
         this._cache.set(id, pixels);
         return pixels;
+    }
+
+    /**
+     * Append a new blank (or user-provided) sprite. Bumps `spritesCount`.
+     * Returns the new id.
+     */
+    addSprite(pixels = null) {
+        const id = this.spritesCount + 1;
+        const buf = pixels && pixels.length === SPRITE_BYTES
+            ? new Uint8Array(pixels)
+            : new Uint8Array(SPRITE_BYTES); // blank
+        this._overrides.set(id, buf);
+        this.spritesCount = id;
+        return id;
+    }
+
+    /** Replace sprite `id` with the given pixel buffer. */
+    replaceSprite(id, pixels) {
+        if (!this.hasSprite(id)) return false;
+        if (!pixels || pixels.length !== SPRITE_BYTES) {
+            throw new Error(`replaceSprite: pixels must be ${SPRITE_BYTES} bytes`);
+        }
+        this._overrides.set(id, new Uint8Array(pixels));
+        this._cache.delete(id); // invalidate any prior decode cache
+        return true;
+    }
+
+    /**
+     * Remove sprite `id`. AS3 semantics:
+     *   - If `id` is the highest in the file (and not 1), decrement spritesCount.
+     *   - Otherwise replace the slot with a blank sprite.
+     * Returns the removed pixel buffer (for undo).
+     */
+    removeSprite(id) {
+        if (!this.hasSprite(id)) return null;
+        const prev = this.getSpritePixels(id);
+        if (id === this.spritesCount && id !== 1) {
+            this._overrides.delete(id);
+            this._cache.delete(id);
+            this.spritesCount--;
+        } else {
+            this._overrides.set(id, new Uint8Array(SPRITE_BYTES));
+        }
+        return prev;
     }
 
     /** True iff sprite `id` carries no pixel data (address 0 or zero-length payload). */

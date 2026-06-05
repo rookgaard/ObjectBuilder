@@ -29,7 +29,33 @@ These are decided. No need to re-ask the user.
 
 ## Current focus
 
-> **Stage 7 — DONE** (2026-06-05). Round-trip closed, **byte-for-byte**:
+> **Stage 8 — DONE** (2026-06-05). Add / duplicate / remove:
+> - `src/store/projectStore.js` got `addThing(category, source?)`,
+>   `duplicateThing(category, sourceId)`, `removeThing(category, id)` mirroring AS3
+>   `ThingTypeStorage` (remove highest id ⇒ decrement count, remove middle ⇒ blank slot).
+>   Plus `addSprite(pixels?)` / `removeSprite(id)` that delegate to the SprFile overlay.
+> - `src/formats/spr/SprFile.js` gained a write overlay: `addSprite`, `replaceSprite`,
+>   `removeSprite`. Overlay wins over the on-disk decode in `getSpritePixels`, so a SPR can be
+>   mutated in place and re-compiled.
+> - `src/ui/panels/thingListPanel.js` + `spriteListPanel.js` wired the New / Duplicate / Remove
+>   icon buttons; each mutation pushes a `thing-add` / `thing-remove` / `sprite-add` /
+>   `sprite-remove` entry onto the undo stack from Stage 6.
+> - Tests: `tests/store/mutations.test.js` (add/duplicate/remove semantics),
+>   `tests/formats/sprFileMutations.test.js` (overlay + round-trip through SprCompiler).
+> - Verified: 62 modules clean under `node --check`; Node smoke against the real 14 MB SPR
+>   confirms addSprite → spritesCount 10423→10424, compile, reload, pixels preserved.
+>
+> **Now active: Stage 9 — OBD single-object import/export.**
+>
+> **Next concrete step**: pull an LZMA codec from a CDN as an ES module (likely
+> `lzma1` or `lzma-purejs`; verify the export shape and SRI). Port the OBD 2.0 layout from
+> `../ObjectBuilder-AS/OBD 2.0 Structure.txt` into `src/formats/obd/{ObdReader,ObdWriter}.js`:
+> 1 byte OBD major, 1 byte OBD minor, 2 bytes client version, 1 byte category, then the
+> ThingType property block (the same gen-N reader/writer code we already have), then per-sprite
+> ARGB pixels. The whole stream is LZMA-compressed. Add export-current-thing / import-OBD-file
+> buttons in the toolbar or context menu, and a tiny test that round-trips a synthetic OBD.
+>
+> Update this section the moment a sub-task closes.
 > - `src/formats/dat/MetadataWriter.js` (base writeTexturePatterns) +
 >   `MetadataWriter3.js` (writeProperties + writeItemProperties — flag order mirrors AS3 exactly,
 >   else-if chain for placement flags) + `writerRegistry.js` (gens 1/2/4/5/6 stub-throw).

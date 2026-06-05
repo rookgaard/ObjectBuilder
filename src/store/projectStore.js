@@ -3,6 +3,7 @@
 // itself stays framework-agnostic.
 
 import { ITEM } from "../core/things/ThingCategory.js";
+import { ThingType } from "../core/things/ThingType.js";
 
 const $ = window.jQuery;
 const bus = $({}); // jQuery's "anything is an event emitter if you wrap it"
@@ -98,6 +99,107 @@ export function replaceThing(category, thing) {
     bus.trigger(EVENTS.SELECTION_CHANGE, [state]);
     return true;
 }
+
+/**
+ * Append a new ThingType to the given category. Returns the new id, or null
+ * if no project is loaded.
+ */
+export function addThing(category, thing = null) {
+    const p = state.project;
+    if (!p) return null;
+    const map = listFor(p.dat, category);
+    const countKey = countKeyFor(category);
+    const newId = (p.dat[countKey] | 0) + 1;
+    const newThing = thing
+        ? Object.assign(thing.clone(), { id: newId, category })
+        : ThingType.create(newId, category);
+    map.set(newId, newThing);
+    p.dat[countKey] = newId;
+    p.dirty = true;
+    state.selectedCategory = category;
+    state.selectedThingId = newId;
+    bus.trigger(EVENTS.SELECTION_CHANGE, [state]);
+    return newId;
+}
+
+/**
+ * Remove ThingType `id` from `category`. AS3 semantics:
+ *   - If it is the highest id, delete the entry AND decrement the count.
+ *   - Otherwise replace with a default ThingType.create(id, category) so the
+ *     slot remains (DAT format has no gaps).
+ *
+ * Returns the previous ThingType (for undo).
+ */
+export function removeThing(category, id) {
+    const p = state.project;
+    if (!p) return null;
+    const map = listFor(p.dat, category);
+    if (!map.has(id)) return null;
+    const minId = minIdFor(category);
+    const countKey = countKeyFor(category);
+    const removed = map.get(id);
+
+    if (id === (p.dat[countKey] | 0) && id !== minId) {
+        map.delete(id);
+        p.dat[countKey] = id - 1;
+        if (state.selectedThingId === id) state.selectedThingId = id - 1;
+    } else {
+        map.set(id, ThingType.create(id, category));
+    }
+    p.dirty = true;
+    bus.trigger(EVENTS.SELECTION_CHANGE, [state]);
+    return removed;
+}
+
+function countKeyFor(category) {
+    switch (category) {
+        case "item":    return "itemsCount";
+        case "outfit":  return "outfitsCount";
+        case "effect":  return "effectsCount";
+        case "missile": return "missilesCount";
+    }
+    throw new Error(`Unknown category: ${category}`);
+}
+
+/** Duplicate the ThingType `sourceId` of `category` at a fresh id. */
+export function duplicateThing(category, sourceId) {
+    const p = state.project;
+    if (!p) return null;
+    const map = listFor(p.dat, category);
+    const source = map.get(sourceId);
+    if (!source) return null;
+    return addThing(category, source);
+}
+
+/** Add a fresh sprite to the SPR storage. Returns the new id, or null. */
+export function addSprite(pixels = null) {
+    const p = state.project;
+    if (!p) return null;
+    const spr = p.spr;
+    if (typeof spr.addSprite !== "function") {
+        throw new Error("SprFile does not support add; upgrade Stage 8");
+    }
+    const id = spr.addSprite(pixels);
+    p.dirty = true;
+    state.selectedSpriteId = id;
+    bus.trigger(EVENTS.SELECTION_CHANGE, [state]);
+    return id;
+}
+
+/** Remove a sprite by id. */
+export function removeSprite(id) {
+    const p = state.project;
+    if (!p) return null;
+    const spr = p.spr;
+    if (typeof spr.removeSprite !== "function") {
+        throw new Error("SprFile does not support remove; upgrade Stage 8");
+    }
+    const removed = spr.removeSprite(id);
+    p.dirty = true;
+    bus.trigger(EVENTS.SELECTION_CHANGE, [state]);
+    return removed;
+}
+
 
 export function listFor(dat, category) {
     switch (category) {

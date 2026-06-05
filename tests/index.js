@@ -19,5 +19,7 @@ import "./ui/animator.test.js";
 import "./ui/spriteSheet.test.js";
 import "./store/projectStore.test.js";
 import "./store/undo.test.js";
+import "./store/mutations.test.js";
+import "./formats/sprFileMutations.test.js";
 
 run();
