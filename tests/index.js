@@ -12,6 +12,8 @@ import "./formats/sprFile.test.js";
 import "./formats/integration_7_72.test.js";
 
 import "./ui/virtualList.test.js";
+import "./ui/animator.test.js";
+import "./ui/spriteSheet.test.js";
 import "./store/projectStore.test.js";
 
 run();

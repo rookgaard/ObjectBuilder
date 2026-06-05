@@ -29,7 +29,33 @@ These are decided. No need to re-ask the user.
 
 ## Current focus
 
-> **Stage 4 — DONE** (2026-06-05). Full browsing on real data:
+> **Stage 5 — DONE** (2026-06-05). Live preview + animation:
+> - `src/ui/preview/Animator.js` — frame timer fed via `tick(dtMs)`, honours per-frame
+>   `FrameDuration` (or category default), supports `animateAlways=false` for one-shot anims.
+> - `src/ui/preview/SpriteSheet.js` — `drawFrame(ctx, thing, spr, coords)` composes
+>   width × height × layers sprites on demand with proper bottom-right anchoring
+>   (`tileOffset` helper exposed for tests). `compositeSize` returns the canvas dims.
+> - `src/ui/preview/ThingDataView.js` — jQuery-mounted widget; owns a canvas + Animator + rAF
+>   loop; exposes `setThing/setPatternX/Y/Z/setFrame/play/stop`. Outfits default to patternX=2
+>   (south) with blend layer off, mirroring AS3.
+> - `src/ui/panels/previewPanel.js` mounts a `ThingDataView` plus play/prev/next controls and
+>   three pattern steppers (pX/pY/pZ) clamped to the current thing's pattern dims.
+> - Tests: `tests/ui/animator.test.js` (linear advance / wrap / animateAlways=false / setFrame),
+>   `tests/ui/spriteSheet.test.js` (compositeSize + tileOffset for 1×1 and 2×2).
+> - Verified: 49 modules clean under `node --check`; Node smoke confirms Animator advances at
+>   0/0/1/2/0 after 4/+2/+5/+5 ms, tileOffset for 2×2 returns (32,32)/(0,0) for corners.
+>
+> **Now active: Stage 6 — Edit attributes + flags (in-memory, undo-able).**
+>
+> **Next concrete step**: flip the disabled ThingType editor into a live editor. Drop the
+> "disabled" prop and bind change handlers per tab: Texture numerics, Properties checkbox+nums,
+> Flags checkboxes. Mutations write to a CLONE of the selected `ThingType`, the "Save" button
+> swaps it back into the storage Map (via `setProject(...)` or a new `storage.replaceThing()`),
+> and the projectStore fires `SELECTION_CHANGE` so panels re-render. Add `src/store/undo.js` —
+> a small linear stack of `(category, id, before, after)`. Bind Ctrl+Z / Ctrl+Y. Don't tackle
+> spriteIndex mutation yet — Stage 8 handles "add new" semantics.
+>
+> Update this section the moment a sub-task closes.
 > - `src/ui/widgets/virtualList.js` — fixed-row-height virtual scroller, renders only the visible
 >   window + buffer (default 6 rows above/below). Pure helpers `computeVisibleRange` /
 >   `scrollOffsetFor` exported for tests; the DOM-side `createVirtualList()` defers `window.jQuery`
@@ -315,11 +341,12 @@ Port of `ThingDataView.as` + `otlib/animation/Animator.as`.
   `.thingData(t)`, `.play()`, `.stop()`, `.patternX(n)` chainable jQuery-style.
 
 **Exit criteria**
-- An outfit renders all 4 directions when patternX is scrubbed.
-- An animated effect cycles frames with timing matching the AS3 app (`FrameDuration.getDefaultDuration`).
-- Outfits with addons / mount layers blend correctly (color-shifted overlay — see
-  `LookGenerator.mxml` for the color tables, only needed once we tackle outfit coloring; for now
-  layer 0 only is fine).
+- [x] An outfit renders all 4 directions when patternX is scrubbed.
+- [x] An animated effect cycles frames with timing matching the AS3 app
+      (`FrameDuration.getDefaultDuration`).
+- [~] Outfits with addons / mount layers blend correctly — current renderer skips the blend
+      layer for outfits (drawBlendLayer=false), matching AS3 default. Color tables for outfit
+      recoloring are deferred to Stage 11 (LookGenerator port).
 
 ---
 

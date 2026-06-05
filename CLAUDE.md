@@ -261,8 +261,9 @@ signatures (user calls them 7.72) so the version dropdown shows what the user ex
       real counts/sprites into the shell. Integration tests against `references/Tibia.{dat,spr}`.
 - [x] Stage 4 — Virtual list for the Object panel, read-only editor bound to selected ThingType,
       keyboard nav, stepper clamping, new test suites.
-- [ ] Stage 5 — Live preview + animation rendering.
-- [ ] Stage 6 — Edit attributes + flags, in-memory.
+- [x] Stage 5 — Live preview: SpriteSheet composer + Animator + ThingDataView widget + pattern
+      controls in the preview panel.
+- [ ] Stage 6 — Edit attributes + flags, in-memory + undo/redo.
 - [ ] Stage 7 — Re-compile `.dat` + `.spr` and download.
 - [ ] Stage 8 — Add / duplicate / remove objects + sprites.
 - [ ] Stage 9 — OBD single-object import/export.

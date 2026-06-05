@@ -7,9 +7,11 @@ import {
     getSelectedThing,
     on,
 } from "../../store/index.js";
-import { argbToImageData } from "../../core/sprites/spritePixels.js";
+import { createThingDataView } from "../preview/ThingDataView.js";
 
 const $ = window.jQuery;
+
+let tdv = null; // ThingDataView instance — recreated per host mount.
 
 export function renderPreviewPanel($host) {
     $host.empty().append(`
@@ -40,46 +42,82 @@ export function renderPreviewPanel($host) {
 
             <section class="panel-section panel-section--grow">
                 <h3 class="panel-section__title">${STRINGS.panels.preview}</h3>
-                <div class="preview-canvas" id="preview-canvas">
-                    <canvas id="preview-canvas-el" width="32" height="32" aria-label="Sprite preview"></canvas>
-                    <p class="preview-canvas__hint" id="preview-canvas-hint">Click "Load 7.72 (dev)" in the toolbar to load reference files.</p>
+                <div class="preview-canvas" id="preview-canvas"></div>
+
+                <div class="preview-controls" id="preview-controls">
+                    <div class="preview-controls__row">
+                        <button type="button" class="icon-button" id="prev-playpause" title="Play / Pause">⏯</button>
+                        <button type="button" class="icon-button" id="prev-prev" title="Previous frame">⏮</button>
+                        <button type="button" class="icon-button" id="prev-next" title="Next frame">⏭</button>
+                    </div>
+                    <div class="preview-controls__row preview-controls__patterns">
+                        <label>pX <input type="number" class="control control--numeric" id="prev-px" value="0" min="0"></label>
+                        <label>pY <input type="number" class="control control--numeric" id="prev-py" value="0" min="0"></label>
+                        <label>pZ <input type="number" class="control control--numeric" id="prev-pz" value="0" min="0"></label>
+                    </div>
                 </div>
             </section>
         </div>
     `);
 
-    refreshFilesInfo();
-    refreshPreview();
+    tdv = createThingDataView($("#preview-canvas"));
 
-    $("#category-select").off("change.preview").on("change.preview", function () {
-        setSelectedCategory(String($(this).val()));
-    });
+    refreshFilesInfo();
+    refreshThingDataView();
+    bindControls();
 
     on(EVENTS.PROJECT_CHANGE, () => {
         refreshFilesInfo();
-        refreshPreview();
+        refreshThingDataView();
     });
     on(EVENTS.SELECTION_CHANGE, () => {
         const cat = getState().selectedCategory;
         if ($("#category-select").val() !== cat) {
             $("#category-select").val(cat);
         }
-        refreshPreview();
+        refreshThingDataView();
     });
+}
+
+function bindControls() {
+    $("#category-select").off("change.preview").on("change.preview", function () {
+        setSelectedCategory(String($(this).val()));
+    });
+
+    $("#prev-playpause").off("click").on("click", () => {
+        if (!tdv) return;
+        if (tdv.isPlaying) tdv.stop(); else tdv.play();
+    });
+
+    $("#prev-prev").off("click").on("click", () => {
+        if (!tdv?.thing) return;
+        const t = tdv.thing;
+        const f = (tdv.coords.frame - 1 + t.frames) % Math.max(1, t.frames);
+        tdv.setFrame(f);
+    });
+
+    $("#prev-next").off("click").on("click", () => {
+        if (!tdv?.thing) return;
+        const t = tdv.thing;
+        const f = (tdv.coords.frame + 1) % Math.max(1, t.frames);
+        tdv.setFrame(f);
+    });
+
+    $("#prev-px").off("input").on("input", function () { tdv?.setPatternX(Number($(this).val())); });
+    $("#prev-py").off("input").on("input", function () { tdv?.setPatternY(Number($(this).val())); });
+    $("#prev-pz").off("input").on("input", function () { tdv?.setPatternZ(Number($(this).val())); });
 }
 
 function refreshFilesInfo() {
     const p = getState().project;
-    const info = p
-        ? {
-              valueStr:      p.version.valueStr,
-              itemsCount:    p.dat.itemsCount,
-              outfitsCount:  p.dat.outfitsCount,
-              effectsCount:  p.dat.effectsCount,
-              missilesCount: p.dat.missilesCount,
-              spritesCount:  p.spr.spritesCount,
-          }
-        : { ...MOCK_CLIENT_INFO };
+    const info = p ? {
+        valueStr:      p.version.valueStr,
+        itemsCount:    p.dat.itemsCount,
+        outfitsCount:  p.dat.outfitsCount,
+        effectsCount:  p.dat.effectsCount,
+        missilesCount: p.dat.missilesCount,
+        spritesCount:  p.spr.spritesCount,
+    } : { ...MOCK_CLIENT_INFO };
 
     $("#info-version").text(info.valueStr);
     $("#info-items").text(info.itemsCount);
@@ -89,37 +127,20 @@ function refreshFilesInfo() {
     $("#info-sprites").text(info.spritesCount);
 }
 
-function refreshPreview() {
-    const canvas = document.getElementById("preview-canvas-el");
-    if (!canvas) return;
-
+function refreshThingDataView() {
+    if (!tdv) return;
     const project = getState().project;
     const thing   = getSelectedThing();
-    const hint    = $("#preview-canvas-hint");
 
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    tdv.setThing(thing, project?.spr ?? null);
 
-    if (!project || !thing) {
-        hint.text(project
-            ? `No selection.`
-            : `Click "Load 7.72 (dev)" in the toolbar to load reference files.`);
-        return;
-    }
-
-    const spriteId = thing.spriteIndex?.[0] ?? 0;
-    if (!spriteId) {
-        hint.text(`${thing.category} ${thing.id}: no sprite at slot 0.`);
-        return;
-    }
-
-    const pixels = project.spr.getSpritePixels(spriteId);
-    if (!pixels) {
-        hint.text(`${thing.category} ${thing.id}: sprite ${spriteId} out of range.`);
-        return;
-    }
-
-    const imageData = argbToImageData(pixels);
-    ctx.putImageData(imageData, 0, 0);
-    hint.text(`${thing.category} ${thing.id} → sprite ${spriteId}`);
+    // Sync pattern stepper bounds to the current thing.
+    const t = thing || { patternX: 1, patternY: 1, patternZ: 1 };
+    $("#prev-px").attr("max", Math.max(0, t.patternX - 1));
+    $("#prev-py").attr("max", Math.max(0, t.patternY - 1));
+    $("#prev-pz").attr("max", Math.max(0, t.patternZ - 1));
+    const c = tdv.coords;
+    $("#prev-px").val(c.patternX);
+    $("#prev-py").val(c.patternY);
+    $("#prev-pz").val(c.patternZ);
 }
