@@ -649,7 +649,18 @@ body.is-splitter-dragging {
     padding: 6px 12px;
     display: flex;
     justify-content: flex-end;
+    align-items: center;
     gap: 6px;
+}
+
+.editor-status {
+    flex: 1 1 auto;
+    color: #9a9a9a;
+    font-size: 11px;
+}
+
+.editor-status.is-dirty {
+    color: #ffd070;
 }
 
 .button {

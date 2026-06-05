@@ -6,6 +6,14 @@ import "../formats/index.js";
 import "../store/index.js";
 import "../workers/index.js";
 import { bootUi } from "../ui/index.js";
+import {
+    setUndoApplyHandler,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+} from "../store/index.js";
+import { applyUndoEntry } from "../ui/panels/editorPanel.js";
 
 const $ = window.jQuery;
 if (!$) {
@@ -21,9 +29,10 @@ $(() => {
     );
 
     bootUi();
+    setUndoApplyHandler(applyUndoEntry);
+    bindKeyboardShortcuts();
 
-    // Smoke-test that public/versions.json is reachable. Stage 3+ will
-    // populate the version dropdown from this.
+    // Smoke-test that public/versions.json is reachable. Stage 3+ uses it.
     $.getJSON("./public/versions.json")
         .done((versions) => {
             console.log(
@@ -39,3 +48,21 @@ $(() => {
             );
         });
 });
+
+function bindKeyboardShortcuts() {
+    $(document).on("keydown.app", (e) => {
+        const isMod = e.ctrlKey || e.metaKey;
+        if (!isMod) return;
+
+        const key = e.key.toLowerCase();
+        // Ignore when focus is on a free-text input (numeric inputs treat
+        // ctrl+z natively as input undo; let the browser handle it).
+        if (e.target instanceof HTMLInputElement && e.target.type !== "checkbox") return;
+
+        if (key === "z" && !e.shiftKey) {
+            if (canUndo()) { e.preventDefault(); undo(); }
+        } else if ((key === "y") || (key === "z" && e.shiftKey)) {
+            if (canRedo()) { e.preventDefault(); redo(); }
+        }
+    });
+}

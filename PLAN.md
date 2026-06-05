@@ -29,7 +29,35 @@ These are decided. No need to re-ask the user.
 
 ## Current focus
 
-> **Stage 5 — DONE** (2026-06-05). Live preview + animation:
+> **Stage 6 — DONE** (2026-06-05). Live editor + undo/redo:
+> - `src/store/projectStore.js` got `replaceThing(category, thing)` that swaps the value in the
+>   per-category Map, sets `project.dirty = true`, and fires SELECTION_CHANGE.
+> - `src/store/undo.js` — linear undo/redo stack (cap 100) with `pushEdit/undo/redo/canUndo/canRedo/clear`,
+>   a `setApplyHandler(fn)` hook, and a jQuery event bus (`UNDO_EVENT` → toolbar buttons).
+>   Defensive against module-load in Node (lazy bus, no window access at import).
+> - `src/ui/panels/editorPanel.js` — drafts + dirty tracking + Save/Close + per-field clamp.
+>   Texture numerics, animation params, all property groups, and all 22 flag checkboxes are now
+>   editable. Status line shows `Editing <cat> <id>` and yellow-tinted `*` when dirty. Save commits
+>   the draft to storage and pushes an undo entry (`kind: "thing-edit"`); Close reverts to the
+>   pristine snapshot. Selection change auto-adopts the new thing as the new draft (discarding
+>   any in-flight edits — proper "save?" prompt is a Stage 13 polish item).
+> - `src/ui/toolbar.js` — Undo/Redo buttons reflect `onUndoChange` state.
+> - `src/app/main.js` — Ctrl+Z / Ctrl+Y (and Ctrl+Shift+Z) bound at document level; native input
+>   undo is left intact for free-text fields.
+> - Tests: `tests/store/undo.test.js` exercises push / undo / redo / fresh-push-wipes-redo / empty.
+> - Verified: 51 modules clean under `node --check`; Node smoke confirms canUndo flips, applier is
+>   called with `undo:2 / redo:2` payloads, fresh push wipes redo, clear() resets both stacks.
+>
+> **Now active: Stage 7 — Compile + download (close the round-trip).**
+>
+> **Next concrete step**: port `MetadataWriter` + `MetadataWriter3` from AS3 into
+> `src/formats/dat/{MetadataWriter,MetadataWriter3}.js`, then a `DatCompiler.js` that mirrors
+> `ThingTypeStorage.compile`. Then `src/formats/spr/SprCompiler.js` (header + offset table + RLE
+> payloads). The hardest test is the round-trip: load `references/Tibia.dat` + `Tibia.spr`,
+> compile back without any edit, diff the bytes — they must match byte-for-byte. That test alone
+> proves both readers and writers are correct.
+>
+> Update this section the moment a sub-task closes.
 > - `src/ui/preview/Animator.js` — frame timer fed via `tick(dtMs)`, honours per-frame
 >   `FrameDuration` (or category default), supports `animateAlways=false` for one-shot anims.
 > - `src/ui/preview/SpriteSheet.js` — `drawFrame(ctx, thing, spr, coords)` composes
@@ -363,10 +391,11 @@ In-memory only; no compile yet.
 - `src/store/undo.js` — simple linear undo/redo stack of `(thingId, before, after)`.
 
 **Exit criteria**
-- Toggling a flag updates the `ThingType` in storage.
-- Numeric edits are bounded and validated.
-- Undo / redo work across edits (Ctrl+Z / Ctrl+Y).
-- "Save" button on the editor commits changes (in-memory) and updates the preview.
+- [x] Toggling a flag updates the `ThingType` in storage (after Save).
+- [x] Numeric edits are bounded and validated (per-field `min/max` clamping).
+- [x] Undo / redo work across edits (Ctrl+Z / Ctrl+Y, toolbar buttons reflect canUndo/canRedo).
+- [x] "Save" button on the editor commits changes (in-memory) and updates the preview through
+      SELECTION_CHANGE.
 
 ---
 

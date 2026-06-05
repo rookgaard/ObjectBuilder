@@ -80,6 +80,25 @@ export function getSelectedThing() {
     return map.get(state.selectedThingId) ?? null;
 }
 
+/**
+ * Replaces the ThingType for (category, id) in the loaded storage. The map
+ * stays the same instance — only the value at `id` is swapped. Used by the
+ * editor's Save action and by undo/redo.
+ *
+ * Marks the project as `dirty` (Stage 7 compile will read this flag).
+ */
+export function replaceThing(category, thing) {
+    const p = state.project;
+    if (!p) return false;
+    const map = listFor(p.dat, category);
+    if (!map.has(thing.id)) return false;
+    thing.category = category;
+    map.set(thing.id, thing);
+    p.dirty = true;
+    bus.trigger(EVENTS.SELECTION_CHANGE, [state]);
+    return true;
+}
+
 export function listFor(dat, category) {
     switch (category) {
         case "item":    return dat.items;

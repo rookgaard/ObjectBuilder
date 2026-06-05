@@ -263,8 +263,8 @@ signatures (user calls them 7.72) so the version dropdown shows what the user ex
       keyboard nav, stepper clamping, new test suites.
 - [x] Stage 5 — Live preview: SpriteSheet composer + Animator + ThingDataView widget + pattern
       controls in the preview panel.
-- [ ] Stage 6 — Edit attributes + flags, in-memory + undo/redo.
-- [ ] Stage 7 — Re-compile `.dat` + `.spr` and download.
+- [x] Stage 6 — Editor edits flags/properties/texture, Save/Close + undo stack + Ctrl+Z/Ctrl+Y.
+- [ ] Stage 7 — Re-compile `.dat` + `.spr` and download (close the byte-for-byte round-trip).
 - [ ] Stage 8 — Add / duplicate / remove objects + sprites.
 - [ ] Stage 9 — OBD single-object import/export.
 - [ ] Stage 10 — Support more version generations (7.10–7.50, 7.80+).

@@ -2,6 +2,13 @@
 
 import { STRINGS } from "./strings.js";
 import { loadReferenceProject } from "../app/loadProject.js";
+import {
+    canUndo,
+    canRedo,
+    undo,
+    redo,
+    onUndoChange,
+} from "../store/index.js";
 
 const $ = window.jQuery;
 
@@ -44,9 +51,20 @@ export function renderToolbar($host) {
         const cmd = $(this).data("cmd");
         runToolbarCommand(cmd, $(this));
     });
+
+    onUndoChange(({ canUndo: u, canRedo: r }) => {
+        $host.find('[data-cmd="toolbar.undo"]').prop("disabled", !u);
+        $host.find('[data-cmd="toolbar.redo"]').prop("disabled", !r);
+    });
+    // Initial state
+    $host.find('[data-cmd="toolbar.undo"]').prop("disabled", !canUndo());
+    $host.find('[data-cmd="toolbar.redo"]').prop("disabled", !canRedo());
 }
 
 function runToolbarCommand(cmd, $btn) {
+    if (cmd === "toolbar.undo") { if (canUndo()) undo(); return; }
+    if (cmd === "toolbar.redo") { if (canRedo()) redo(); return; }
+
     if (cmd === "toolbar.loadRef") {
         const $status = $(".app-status");
         $btn.prop("disabled", true);
