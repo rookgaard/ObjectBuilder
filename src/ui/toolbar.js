@@ -5,6 +5,7 @@ import { loadReferenceProject } from "../app/loadProject.js";
 import { compileAndDownload } from "../app/compileProject.js";
 import { showOpenDialog }      from "./dialogs/openDialog.js";
 import { showNewDialog }       from "./dialogs/newDialog.js";
+import { showFindDialog }      from "./tools/findDialog.js";
 import {
     canUndo,
     canRedo,
@@ -75,6 +76,10 @@ function runToolbarCommand(cmd, $btn) {
     }
     if (cmd === "toolbar.open") {
         showOpenDialog().catch((err) => console.error("[toolbar] open failed", err));
+        return;
+    }
+    if (cmd === "toolbar.find") {
+        showFindDialog().catch((err) => console.error("[toolbar] find failed", err));
         return;
     }
     if (cmd === "toolbar.save") {

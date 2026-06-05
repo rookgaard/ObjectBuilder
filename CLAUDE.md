@@ -270,9 +270,8 @@ signatures (user calls them 7.72) so the version dropdown shows what the user ex
       buttons + undo entries; round-trip preserved through SPR re-compile.
 - [x] Stage 9 — File menu wiring: Open / New / Compile / Compile As / Close dialogs.
 - [x] Stage 10 — All six DAT generations ported (1/2/3/4/5/6 readers + writers + registries).
-- [ ] Stage 11 — Helper tools (Find, Slicer, Animation Editor, Look Generator).
-- [ ] Stage 11 — Helper tools (Find, Slicer, Animation Editor, Look Generator).
-- [ ] Stage 12 — Persistence (OPFS / localStorage).
+- [x] Stage 11 — Helper tools: Find dialog + Slicer dialog wired into the Tools menu.
+- [ ] Stage 12 — Persistence (OPFS / localStorage) + polish (save? prompt, theme toggle).
 - [ ] Stage 13 — Polish (keyboard shortcuts, a11y, theming).
 
 Detailed roadmap & resume points: see [PLAN.md](./PLAN.md).

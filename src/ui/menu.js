@@ -7,6 +7,8 @@ import { setProject, getState } from "../store/index.js";
 import { showOpenDialog }       from "./dialogs/openDialog.js";
 import { showNewDialog }        from "./dialogs/newDialog.js";
 import { showCompileAsDialog }  from "./dialogs/compileAsDialog.js";
+import { showFindDialog }       from "./tools/findDialog.js";
+import { showSlicerDialog }     from "./tools/slicerDialog.js";
 import { compileAndDownload }   from "../app/compileProject.js";
 
 const $ = window.jQuery;
@@ -23,6 +25,9 @@ const HANDLERS = {
     "file.compileAs":  () => doCompileAs(),
     "file.close":      () => doClose(),
     "file.exit":       () => console.info("[menu] File → Exit is a no-op in the browser."),
+
+    "tools.find":   () => showFindDialog().catch((e) => console.error("[menu] find failed", e)),
+    "tools.slicer": () => showSlicerDialog().catch((e) => console.error("[menu] slicer failed", e)),
 };
 
 function reportStatus(msg) {

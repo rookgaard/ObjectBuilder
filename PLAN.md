@@ -29,6 +29,24 @@ These are decided. No need to re-ask the user.
 
 ## Current focus
 
+> **Stage 11 — DONE** (2026-06-05). Helper tools — Find + Slicer:
+> - `src/ui/tools/findDialog.js` — Tools → Find. Category dropdown + ID range + 30+ boolean
+>   filters (any/true/false) + 12 numeric filters (min/max). Walks the storage Map; results list
+>   shows id + first few active flags. Clicking a row drives projectStore to that selection.
+> - `src/ui/tools/slicerDialog.js` — Tools → Slicer. Loads a PNG (dimensions must be a multiple
+>   of 32), slices it into 32×32 tiles via Canvas, previews them, "Add tiles as sprites" pushes
+>   each as a new sprite via the SprFile overlay and undo stack.
+> - Wired in `src/ui/menu.js` Tools → Find / Slicer; toolbar 🔍 button also opens Find.
+> - Verified: 83 modules clean under `node --check`.
+>
+> **Now active: Stage 12 — Polish + persistence (final stretch).**
+>
+> **Next concrete step**: localStorage for last selected category + panel widths + dark theme
+> setting (no-op for now since we ship dark only). A confirm-before-close-with-unsaved-changes
+> prompt in the editor. Keyboard shortcuts list (Ctrl+O / Ctrl+S / Ctrl+N). Optional OPFS for
+> caching a loaded project across reloads (out of scope if it bloats).
+>
+> --- Stage 10 history (kept for reference) ---
 > **Stage 10 — DONE** (2026-06-05). All six DAT generations now port-complete:
 > - `src/formats/dat/MetadataFlags{1,2,4,5,6}.js` — flag byte tables for 7.10–7.30, 7.40–7.50,
 >   7.80–8.54, 8.55–9.86, 10.10–10.56 (gen-3 was already done in Stage 3).
