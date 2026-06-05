@@ -11,6 +11,7 @@ import "./formats/datLoader.test.js";
 import "./formats/sprFile.test.js";
 import "./formats/datCompiler.test.js";
 import "./formats/sprCompiler.test.js";
+import "./formats/obdCodec.test.js";
 import "./formats/integration_7_72.test.js";
 import "./formats/roundtrip_7_72.test.js";
 

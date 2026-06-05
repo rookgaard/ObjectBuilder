@@ -25,6 +25,8 @@
  * @property {number}    [buffer=6]               rows rendered outside viewport on each side.
  * @property {(index:number)=>string} renderRow   returns HTML for the row at `index`.
  * @property {(index:number)=>string} [getKey]    stable key for reuse logic; defaults to index.
+ * @property {(rows:JQuery, range:{first:number,last:number,selectedIndex:number})=>void} [afterRender]
+ *   optional hook after the visible rows are in the DOM.
  */
 
 /**
@@ -38,6 +40,7 @@ export function createVirtualList($host, opts) {
     const rowHeight = opts.rowHeight;
     const buffer    = opts.buffer ?? 6;
     const renderRow = opts.renderRow;
+    const afterRender = opts.afterRender;
 
     $host.addClass("vlist").empty().append(`
         <div class="vlist__spacer">
@@ -107,6 +110,7 @@ export function createVirtualList($host, opts) {
             );
         }
         $rows.html(parts.join(""));
+        afterRender?.($rows, { first, last, selectedIndex });
     }
 
     $host.on("scroll.vlist", render);

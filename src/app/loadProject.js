@@ -55,6 +55,11 @@ export const REFERENCE_PROJECTS = [
     { id: "ref860",  label: "Load 8.6",   dir: "860",  valueStr: "8.60 v1" },
     { id: "ref900",  label: "Load 9.0",   dir: "900",  valueStr: "9.00" },
     { id: "ref1010", label: "Load 10.10", dir: "1010", valueStr: "10.10" },
+    { id: "ref1035", label: "Load 10.35", dir: "1035", valueStr: "10.35" },
+    { id: "ref1041", label: "Load 10.41", dir: "1041", valueStr: "10.41" },
+    { id: "ref1050", label: "Load 10.50", dir: "1050", valueStr: "10.50" },
+    { id: "ref1055", label: "Load 10.55", dir: "1055", valueStr: "10.55" },
+    { id: "ref1061", label: "Load 10.61", dir: "1061", valueStr: "10.61" },
     {
         id: "ref1098", label: "Load 10.98", dir: "1098", valueStr: "10.98",
         fallback: { value: 1098, datSignature: 0x000042a3, sprSignature: 0x57bbd603 },

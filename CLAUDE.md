@@ -273,8 +273,11 @@ signatures (user calls them 7.72) so the version dropdown shows what the user ex
 - [x] Stage 11 — Helper tools: Find dialog + Slicer dialog wired into the Tools menu.
 - [x] Stage 12 — Polish + persistence: localStorage for panel widths + selected category;
       "Discard changes?" prompt; `beforeunload` warning; Ctrl+N / Ctrl+O / Ctrl+S shortcuts.
-- [ ] Optional follow-ups: OBD single-object import/export (needs LZMA dep); Animation Editor;
-      Look Generator (outfit colour preview); SpritesOptimizer; theme toggle / a11y deep dive.
+- [x] Stage 13 — OBD 2.0 single-object import/export. Export selected thing to `.obd`; import
+      `.obd` into the current project as a new object and append/reuse sprites as needed. LZMA is
+      loaded lazily from a browser script at use time; no npm, no bundler, no `node_modules`.
+- [ ] Optional follow-ups: Animation Editor; Look Generator (outfit colour preview);
+      SpritesOptimizer; theme toggle / a11y deep dive.
 
 Detailed roadmap & resume points: see [PLAN.md](./PLAN.md).
 

@@ -41,11 +41,11 @@ export function compositeSize(thing) {
  * @param {ThingType}                thing
  * @param {SprFile}                  spr
  * @param {object}                   coords    { patternX, patternY, patternZ, frame }
- * @param {object}                   [options] { drawBlendLayer = true, background = null }
+ * @param {object}                   [options] { drawBlendLayer = true, background = null, layer = null }
  */
 export function drawFrame(ctx, thing, spr, coords, options = {}) {
     const { patternX = 0, patternY = 0, patternZ = 0, frame = 0 } = coords;
-    const { drawBlendLayer = true, background = null } = options;
+    const { drawBlendLayer = true, background = null, layer = null } = options;
 
     const size = compositeSize(thing);
 
@@ -56,12 +56,18 @@ export function drawFrame(ctx, thing, spr, coords, options = {}) {
         ctx.clearRect(0, 0, size.width, size.height);
     }
 
-    const layers = drawBlendLayer ? thing.layers : 1;
+    const selectedLayer = Number.isFinite(layer)
+        ? Math.min(Math.max(0, layer | 0), Math.max(0, thing.layers - 1))
+        : null;
+    const firstLayer = selectedLayer ?? 0;
+    const layers = selectedLayer == null
+        ? (drawBlendLayer ? thing.layers : 1)
+        : selectedLayer + 1;
     const px = thing.patternX > 0 ? patternX % thing.patternX : 0;
     const py = thing.patternY > 0 ? patternY % thing.patternY : 0;
     const pz = thing.patternZ > 0 ? patternZ % thing.patternZ : 0;
 
-    for (let layer = 0; layer < layers; layer++) {
+    for (let layer = firstLayer; layer < layers; layer++) {
         for (let hTile = 0; hTile < thing.height; hTile++) {
             for (let wTile = 0; wTile < thing.width; wTile++) {
                 const spriteSlot = thing.getSpriteIndex(wTile, hTile, layer, px, py, pz, frame);

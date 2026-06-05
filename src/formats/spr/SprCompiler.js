@@ -23,12 +23,13 @@ const LEN_PREFIX  = 2; // u16 chunk length per sprite chunk
  * @param {Version} version
  * @param {object}  [options]
  * @param {boolean} [options.extended]      32-bit header + ids (auto from v ≥ 960).
- * @param {boolean} [options.transparency]  per-pixel alpha mode (auto from v ≥ 855).
+ * @param {boolean} [options.transparency]  per-pixel alpha mode. Opt-in only;
+ *   not auto-derived from the client version.
  * @returns {Uint8Array}
  */
 export function compileSpr(src, version, options = {}) {
     const extended     = options.extended     ?? (version.value >= 960);
-    const transparency = options.transparency ?? (version.value >= 855);
+    const transparency = options.transparency ?? false;
 
     const count      = src.spritesCount | 0;
     const headerSize = extended ? HEADER_EXT : HEADER_BASE;

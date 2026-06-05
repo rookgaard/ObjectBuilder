@@ -13,10 +13,13 @@ import {
 } from "../../store/index.js";
 import { createVirtualList } from "../widgets/virtualList.js";
 import { addThing, duplicateThing, removeThing } from "../../store/index.js";
+import { exportSelectedThingToObd, importObdFromFilePicker } from "../../app/obdProject.js";
+import { drawFrame, compositeSize } from "../preview/SpriteSheet.js";
 
 const $ = window.jQuery;
 
-const ROW_HEIGHT = 22;
+const ROW_HEIGHT = 41;
+const THUMB_SIZE = 32;
 
 // Module-scoped because there's one Object panel per app.
 let vlist = null;
@@ -40,8 +43,8 @@ export function renderThingListPanel($host) {
             <section class="panel-section">
                 <div class="button-row">
                     <button type="button" class="icon-button" title="Replace (TODO)">⤺</button>
-                    <button type="button" class="icon-button" title="Import (TODO)">⤓</button>
-                    <button type="button" class="icon-button" title="Export (TODO)">⤒</button>
+                    <button type="button" class="icon-button" id="thing-btn-import" title="Import OBD">⤓</button>
+                    <button type="button" class="icon-button" id="thing-btn-export" title="Export selected as OBD">⤒</button>
                     <button type="button" class="icon-button" title="Edit (select & edit in middle panel)">✎</button>
                     <button type="button" class="icon-button" id="thing-btn-duplicate" title="Duplicate selected">⎘</button>
                     <button type="button" class="icon-button" id="thing-btn-new"       title="New (blank)">＋</button>
@@ -61,17 +64,31 @@ export function renderThingListPanel($host) {
 function bindControls() {
     const $hostEl = $("#thing-list-host");
 
-    // Numeric stepper — clamped to category min/max, push into store.
+    // Numeric stepper. While typing, allow transient values like "3" / "30"
+    // for item ids; clamp only when the user commits the field.
     $("#thing-id-input").off(".thingList")
-        .on("change.thingList input.thingList", function () {
-            const raw = Number($(this).val());
+        .on("input.thingList", function () {
+            const text = String($(this).val()).trim();
+            if (!/^\d+$/.test(text)) return;
+
+            const raw = Number(text);
             const cat = getState().selectedCategory;
             const min = minIdFor(cat);
             const max = Math.max(min, maxIdFor(cat));
-            if (!Number.isFinite(raw)) return;
-            const clamped = Math.min(max, Math.max(min, Math.floor(raw)));
-            if (clamped !== raw) $(this).val(clamped);
-            setSelectedThingId(clamped);
+            if (raw >= min && raw <= max) {
+                setSelectedThingId(raw);
+            }
+        })
+        .on("change.thingList blur.thingList", function () {
+            commitThingIdInput($(this));
+        })
+        .on("keydown.thingList", function (e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                commitThingIdInput($(this));
+            } else if (e.key === "Escape") {
+                $(this).val(getState().selectedThingId ?? "");
+            }
         });
 
     // Add / duplicate / remove buttons
@@ -91,6 +108,35 @@ function bindControls() {
         if (s.selectedThingId == null) return;
         const before = removeThing(s.selectedCategory, s.selectedThingId);
         if (before) pushEdit("thing-remove", { category: s.selectedCategory, id: before.id, before });
+    });
+    $("#thing-btn-export").off("click").on("click", async () => {
+        const $status = $(".app-status");
+        try {
+            $status.text("Exporting OBD...");
+            const out = await exportSelectedThingToObd();
+            $status.text(`Exported ${out.filename} (${out.bytes.length} B).`);
+        } catch (err) {
+            console.error("[thingList] OBD export failed", err);
+            $status.text(`OBD export failed: ${err.message}`);
+        }
+    });
+    $("#thing-btn-import").off("click").on("click", async () => {
+        const $status = $(".app-status");
+        try {
+            $status.text("Importing OBD...");
+            const out = await importObdFromFilePicker();
+            if (!out) {
+                $status.text("OBD import cancelled.");
+                return;
+            }
+            $status.text(
+                `Imported ${out.category} ${out.id} from OBD; ` +
+                `${out.spritesAdded} sprite${out.spritesAdded === 1 ? "" : "s"} added.`
+            );
+        } catch (err) {
+            console.error("[thingList] OBD import failed", err);
+            $status.text(`OBD import failed: ${err.message}`);
+        }
     });
 
     // Keyboard navigation on the focused list.
@@ -115,6 +161,20 @@ function bindControls() {
     });
 }
 
+function commitThingIdInput($input) {
+    const raw = Number($input.val());
+    const cat = getState().selectedCategory;
+    const min = minIdFor(cat);
+    const max = Math.max(min, maxIdFor(cat));
+    if (!Number.isFinite(raw)) {
+        $input.val(getState().selectedThingId ?? min);
+        return;
+    }
+    const clamped = Math.min(max, Math.max(min, Math.floor(raw)));
+    $input.val(clamped);
+    setSelectedThingId(clamped);
+}
+
 function rebuildList() {
     const $hostEl = $("#thing-list-host");
     const $title  = $("#thing-list-title");
@@ -135,9 +195,17 @@ function rebuildList() {
             renderRow: (i) => {
                 const id = min + i;
                 const t = map.get(id);
-                if (!t) return `<span class="vlist__row-id">${id}</span> <span class="vlist__row-meta">(missing)</span>`;
-                return `<span class="vlist__row-id">${id}</span>`;
+                const label = t?.marketName ? ` - ${escapeHtml(t.marketName)}` : "";
+                return `
+                    <span class="thing-row-thumb">
+                        <canvas class="thing-row-thumb__canvas" width="${THUMB_SIZE}" height="${THUMB_SIZE}"
+                                data-thing-id="${id}" aria-hidden="true"></canvas>
+                    </span>
+                    <span class="vlist__row-id">${id}</span>
+                    ${t ? `<span class="vlist__row-meta">${label}</span>` : `<span class="vlist__row-meta">(missing)</span>`}
+                `;
             },
+            afterRender: drawVisibleThumbnails,
         });
         vlist.onSelect((index) => setSelectedThingId(indexToId(index)));
 
@@ -158,7 +226,11 @@ function rebuildList() {
             rowHeight: ROW_HEIGHT,
             renderRow: (i) => {
                 const t = mockList[i];
-                return `<span class="vlist__row-id">${t.id}</span> <span class="vlist__row-meta">— ${t.name}</span>`;
+                return `
+                    <span class="thing-row-thumb thing-row-thumb--empty"></span>
+                    <span class="vlist__row-id">${t.id}</span>
+                    <span class="vlist__row-meta">— ${escapeHtml(t.name)}</span>
+                `;
             },
         });
         vlist.onSelect((index) => setSelectedThingId(mockList[index].id));
@@ -168,6 +240,61 @@ function rebuildList() {
         $input.attr("min", 0).removeAttr("max").val(mockList[0]?.id ?? 0);
         mode = "mock";
     }
+}
+
+function drawVisibleThumbnails($rows) {
+    const state = getState();
+    const project = state.project;
+    if (!project) return;
+
+    const category = state.selectedCategory;
+    const map = listFor(project.dat, category);
+
+    $rows.find(".thing-row-thumb__canvas").each(function () {
+        const id = Number(this.dataset.thingId);
+        const thing = map.get(id);
+        drawThingThumbnail(this, thing, project.spr);
+    });
+}
+
+function drawThingThumbnail(canvas, thing, spr) {
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, THUMB_SIZE, THUMB_SIZE);
+
+    if (!thing || !spr || !thing.spriteIndex?.length) return;
+
+    const size = compositeSize(thing);
+    if (size.width <= 0 || size.height <= 0) return;
+
+    const source = document.createElement("canvas");
+    source.width = size.width;
+    source.height = size.height;
+    const sourceCtx = source.getContext("2d");
+    drawFrame(sourceCtx, thing, spr, {
+        patternX: thing.category === "outfit" && thing.patternX > 2 ? 2 : 0,
+        patternY: 0,
+        patternZ: 0,
+        frame: 0,
+    }, {
+        drawBlendLayer: thing.category !== "outfit",
+    });
+
+    const scale = Math.min(THUMB_SIZE / source.width, THUMB_SIZE / source.height, 1);
+    const width = Math.max(1, Math.round(source.width * scale));
+    const height = Math.max(1, Math.round(source.height * scale));
+    const x = Math.floor((THUMB_SIZE - width) / 2);
+    const y = Math.floor((THUMB_SIZE - height) / 2);
+
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(source, x, y, width, height);
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
 }
 
 function syncListWithState() {

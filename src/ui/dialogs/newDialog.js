@@ -53,7 +53,7 @@ export async function showNewDialog() {
     const verStr  = String($body.find("#new-version").val());
     const version = versions.find((v) => v.valueStr === verStr);
     const extended           = $body.find("#new-extended").is(":checked")           || version.value >= 960;
-    const transparency       = $body.find("#new-transparency").is(":checked")       || version.value >= 855;
+    const transparency       = $body.find("#new-transparency").is(":checked");
     const improvedAnimations = $body.find("#new-improvedAnimations").is(":checked") || version.value >= 1050;
 
     const project = buildBlankProject(version, { extended, transparency, improvedAnimations });

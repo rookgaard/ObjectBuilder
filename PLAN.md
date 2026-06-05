@@ -29,6 +29,28 @@ These are decided. No need to re-ask the user.
 
 ## Current focus
 
+> **Stage 13 — DONE** (2026-06-05). OBD 2.0 single-object import/export:
+> - `src/formats/obd/ObdFlags.js` + `ObdCodec.js` — byte layout mirrors AS3
+>   `otlib/obd/OBDEncoder.as`: u16 OBD version `200`, u16 client version, u8 category, u32
+>   texture-pattern position, fixed OBD property flag stream, texture patterns, then 4096-byte
+>   ARGB sprite buffers.
+> - `src/formats/obd/lzmaCodec.js` — lazy browser loader for LZMA-JS 2.3.2. This keeps the app
+>   static and no-build: no npm install, no package files, no `node_modules`.
+> - `src/app/obdProject.js` — exports the selected object to `<category>-<id>.obd`; imports a
+>   chosen `.obd` into the current project as a new thing. Imported sprite slots reuse matching
+>   existing ids when possible, use sprite id 0 for blank pixels, and append new sprites otherwise.
+> - `src/ui/panels/thingListPanel.js` — object-list Import / Export buttons are now wired.
+> - Tests: `tests/formats/obdCodec.test.js` covers the uncompressed V2 payload layout plus an
+>   injected-codec full-file round-trip.
+> - Verified: all JS modules pass `node --check`; Node OBD smoke passes; real LZMA-JS smoke
+>   compressed/decompressed an OBD payload successfully; browser runner reports 102 passed,
+>   0 failed via Chrome DevTools Protocol against `http://127.0.0.1/tests.html`.
+>
+> **App now covers the user's stated scope**: load, browse, edit, add/remove/duplicate,
+> compile DAT/SPR, and export/import OBD. Deferred follow-ups remain: Animation Editor,
+> Look Generator, SpritesOptimizer, theme toggle / a11y deep dive.
+>
+> --- Stage 12 history (kept for reference) ---
 > **Stage 12 — DONE** (2026-06-05). Polish + persistence (final stretch):
 > - `src/app/persistence.js` — tiny localStorage wrapper with defaults + clamping.
 > - Panel widths persist across reloads via splitter `mouseup` → `setPanelWidth`.
@@ -38,14 +60,6 @@ These are decided. No need to re-ask the user.
 > - Keyboard shortcuts: Ctrl+N (new), Ctrl+O (open), Ctrl+S (compile + download),
 >   Ctrl+Z / Ctrl+Y (undo / redo) — already wired earlier, refined here.
 > - Verified: 84 modules clean under `node --check`; 7.72 round-trip still byte-identical.
->
-> **App is feature-complete for the user's stated scope** — load + browse + edit + compile real
-> 7.72 files, all six DAT generations supported, helper tools (Find + Slicer). Two follow-up
-> items remain documented but deferred:
->   1. **OBD single-object import/export** — would need an LZMA codec (no browser-native LZMA).
->   2. **Animation Editor + Look Generator** — cosmetic, not blocking.
->
-> Both can be picked up later as Stage 13 / 14 if the owner asks.
 >
 > --- Stage 11 history (kept for reference) ---
 > **Stage 11 — DONE** (2026-06-05). Helper tools — Find + Slicer:

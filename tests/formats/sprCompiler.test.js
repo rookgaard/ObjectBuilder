@@ -40,9 +40,9 @@ describe("SprCompiler — synthetic round-trip", () => {
         const bytes = compileSpr(src, V, { extended: false, transparency: false });
 
         // Header sanity
-        assertEqual(bytes[0], 0x33, "sig byte 0");
-        assertEqual(bytes[1], 0x5A, "sig byte 1");
-        assertEqual(bytes[2], 0x9D, "sig byte 2");
+        assertEqual(bytes[0], 0xBE, "sig byte 0");
+        assertEqual(bytes[1], 0x52, "sig byte 1");
+        assertEqual(bytes[2], 0x98, "sig byte 2");
         assertEqual(bytes[3], 0x43, "sig byte 3");
         assertEqual(bytes[4] | (bytes[5] << 8), 3, "spritesCount");
 

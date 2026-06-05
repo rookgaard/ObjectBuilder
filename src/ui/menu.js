@@ -48,8 +48,8 @@ async function doOpen() {
     } catch (err) { console.error("[menu] open failed", err); reportStatus(`Open failed: ${err.message}`); }
 }
 
-function doCompile() {
-    if (!getState().project) { reportStatus("No project loaded."); return; }
+async function doCompile() {
+    if (!getState().project) { await showNoProjectDialog("Compile"); return; }
     try {
         const out = compileAndDownload();
         reportStatus(`Compiled — dat ${out.datBytes.length} B, spr ${out.sprBytes.length} B.`);
@@ -57,7 +57,7 @@ function doCompile() {
 }
 
 async function doCompileAs() {
-    if (!getState().project) { reportStatus("No project loaded."); return; }
+    if (!getState().project) { await showNoProjectDialog("Compile As"); return; }
     try {
         const out = await showCompileAsDialog();
         if (out) reportStatus(`Compiled as ${out.version.valueStr}.`);
@@ -86,6 +86,18 @@ async function confirmDiscard(message) {
         ],
     });
     return action === "ok";
+}
+
+async function showNoProjectDialog(action) {
+    reportStatus("No project loaded.");
+    const { showModal } = await import("./widgets/modal.js");
+    await showModal({
+        title: "No Project Loaded",
+        body: $(`<p>${action} requires an open project. Use File → New or File → Open first.</p>`),
+        buttons: [
+            { label: "OK", value: "ok", primary: true },
+        ],
+    });
 }
 
 function syncViewItem(commandId, panelId) {

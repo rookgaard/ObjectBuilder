@@ -13,6 +13,14 @@ export { writeTexturePatterns } from "./dat/MetadataWriter.js";
 
 export { SprFile }    from "./spr/SprFile.js";
 export { compileSpr } from "./spr/SprCompiler.js";
+export {
+    collectObdSprites,
+    decodeObd,
+    decodeObdPayloadV2,
+    encodeObdPayloadV2,
+    encodeObdV2,
+} from "./obd/ObdCodec.js";
+export { getLzmaCodec } from "./obd/lzmaCodec.js";
 
 export const LAYER_NAME = "formats";
 console.log(`[ObjectBuilder-JS] layer loaded: ${LAYER_NAME}`);

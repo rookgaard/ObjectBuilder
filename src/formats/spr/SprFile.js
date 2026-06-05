@@ -23,7 +23,9 @@ export class SprFile {
      * @param {Version} version
      * @param {object}  [options]
      * @param {boolean} [options.extended]      32-bit count + ids (auto from v ≥ 960).
-     * @param {boolean} [options.transparency]  per-pixel alpha mode (auto from v ≥ 855).
+     * @param {boolean} [options.transparency]  per-pixel alpha mode. Opt-in only;
+     *   stock CipSoft `.spr` files are never alpha-transparent, so this is NOT
+     *   auto-derived from the client version.
      * @param {boolean} [options.strict=true]   throw on signature mismatch.
      */
     constructor(buffer, version, { extended, transparency, strict = true } = {}) {
@@ -32,7 +34,7 @@ export class SprFile {
             : buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
         this.version = version;
         this.extended     = extended    ?? version.value >= 960;
-        this.transparency = transparency ?? version.value >= 855;
+        this.transparency = transparency ?? false;
         this.headerSize   = this.extended ? HEADER_EXT : HEADER_BASE;
 
         const r = new BinaryReader(this.buffer);

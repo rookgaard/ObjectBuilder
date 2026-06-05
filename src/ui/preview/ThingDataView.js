@@ -28,12 +28,12 @@ export function createThingDataView($host) {
 
     let thing = null;
     let spr   = null;
-    let coords = { patternX: 0, patternY: 0, patternZ: 0, frame: 0 };
-    let drawBlendLayer = true;
+    let coords = { patternX: 0, patternY: 0, patternZ: 0, frame: 0, layer: null };
     let animator = null;
     let playing = false;
     let rafId = null;
     let lastTs = 0;
+    const changeHandlers = [];
 
     function setThing(nextThing, nextSpr) {
         thing = nextThing || null;
@@ -43,6 +43,7 @@ export function createThingDataView($host) {
             stop();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             $hint.text("No thing selected.");
+            emitChange();
             return;
         }
 
@@ -50,15 +51,18 @@ export function createThingDataView($host) {
         canvas.width  = size.width;
         canvas.height = size.height;
 
-        // Outfit conventions from AS3 ThingDataView:
-        //  - first frame skipped when not animateAlways (start at frame 1).
-        //  - patternX defaults to 2 (south-facing) so the preview looks right.
+        // Outfit convention from AS3 ThingDataView: patternX defaults to 2
+        // (south-facing) so the preview looks right.
         if (thing.category === "outfit") {
-            coords = { patternX: 2, patternY: 0, patternZ: 0, frame: 0 };
-            drawBlendLayer = false;
+            coords = {
+                patternX: Math.min(2, Math.max(0, thing.patternX - 1)),
+                patternY: 0,
+                patternZ: 0,
+                frame: 0,
+                layer: thing.layers > 1 ? 0 : null,
+            };
         } else {
-            coords = { patternX: 0, patternY: 0, patternZ: 0, frame: 0 };
-            drawBlendLayer = true;
+            coords = { patternX: 0, patternY: 0, patternZ: 0, frame: 0, layer: null };
         }
 
         if (thing.isAnimation) {
@@ -66,7 +70,9 @@ export function createThingDataView($host) {
                 frames: thing.frames,
                 frameDurations: thing.frameDurations,
                 category: thing.category,
-                animateAlways: thing.animateAlways || thing.category === "outfit",
+                // This is a preview/editor surface, so animated things should
+                // keep looping even when the DAT flag "animate always" is off.
+                animateAlways: true,
                 startFrame: 0,
             });
             play();
@@ -80,8 +86,12 @@ export function createThingDataView($host) {
 
     function render() {
         if (!thing || !spr) return;
-        drawFrame(ctx, thing, spr, coords, { drawBlendLayer });
+        drawFrame(ctx, thing, spr, coords, {
+            drawBlendLayer: coords.layer == null,
+            layer: coords.layer,
+        });
         $hint.text(thingHint());
+        emitChange();
     }
 
     function thingHint() {
@@ -90,13 +100,17 @@ export function createThingDataView($host) {
         const py = thing.patternY > 1 ? ` pY ${coords.patternY}/${thing.patternY}` : "";
         const pz = thing.patternZ > 1 ? ` pZ ${coords.patternZ}/${thing.patternZ}` : "";
         const fr = thing.frames   > 1 ? ` frame ${coords.frame + 1}/${thing.frames}` : "";
-        return `${thing.category} ${thing.id} · ${px}${py}${pz}${fr}`;
+        const layer = thing.layers > 1
+            ? ` layer ${coords.layer == null ? "all" : coords.layer + 1}/${thing.layers}`
+            : "";
+        return `${thing.category} ${thing.id} · ${px}${py}${pz}${fr}${layer}`;
     }
 
     function play() {
         if (!animator || playing) return;
         playing = true;
         lastTs = performance.now();
+        emitChange();
         const loop = (ts) => {
             if (!playing) return;
             const dt = ts - lastTs;
@@ -116,6 +130,7 @@ export function createThingDataView($host) {
             cancelAnimationFrame(rafId);
             rafId = null;
         }
+        emitChange();
     }
 
     function setPatternX(v) {
@@ -134,11 +149,26 @@ export function createThingDataView($host) {
         render();
     }
     function setFrame(v) {
-        if (!thing || !animator) return;
-        const f = ((v | 0) % thing.frames + thing.frames) % thing.frames;
-        animator.setFrame(f);
+        if (!thing) return;
+        const frames = Math.max(1, thing.frames | 0);
+        const f = ((v | 0) % frames + frames) % frames;
+        if (animator) animator.setFrame(f);
         coords = { ...coords, frame: f };
         render();
+    }
+    function setLayer(v) {
+        if (!thing) return;
+        if (v == null || v === "all") {
+            coords = { ...coords, layer: null };
+        } else {
+            coords = { ...coords, layer: clampPattern(v, thing.layers) };
+        }
+        render();
+    }
+
+    function emitChange() {
+        const snapshot = { thing, coords: { ...coords }, playing };
+        changeHandlers.forEach((h) => h(snapshot));
     }
 
     function clampPattern(v, max) {
@@ -152,8 +182,10 @@ export function createThingDataView($host) {
         setPatternY,
         setPatternZ,
         setFrame,
+        setLayer,
         play,
         stop,
+        onChange(h) { changeHandlers.push(h); },
         get coords() { return { ...coords }; },
         get isPlaying() { return playing; },
         get thing() { return thing; },

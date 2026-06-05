@@ -28,6 +28,16 @@ describe("Animator — linear loop", () => {
         assertEqual(a.currentFrame, 0);
     });
 
+    it("keeps looping after wrapping to frame 0", () => {
+        const a = new Animator({ frames: 3, frameDurations: FIVES, animateAlways: true });
+        a.tick(5); // → 1
+        a.tick(5); // → 2
+        a.tick(5); // → 0
+        assertEqual(a.isComplete, false);
+        assertEqual(a.tick(5), true, "advances again after wrap");
+        assertEqual(a.currentFrame, 1);
+    });
+
     it("with animateAlways=false stops after one loop", () => {
         const a = new Animator({ frames: 2, frameDurations: [new FrameDuration(1, 1), new FrameDuration(1, 1)], animateAlways: false });
         a.tick(1); // 0 → 1
