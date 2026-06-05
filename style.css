@@ -489,6 +489,19 @@ body.is-splitter-dragging {
     visibility: hidden;
 }
 
+.preview-pose-btn {
+    width: auto;
+    padding: 0 10px;
+    height: 22px;
+    flex: 1;
+}
+
+.preview-pose-btn.is-active {
+    background: #1f6db3;
+    border-color: #5fa3dd;
+    color: #fff;
+}
+
 .preview-range {
     width: 100%;
     min-width: 0;

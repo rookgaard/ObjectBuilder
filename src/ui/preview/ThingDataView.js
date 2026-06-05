@@ -28,6 +28,8 @@ export function createThingDataView($host) {
 
     let thing = null;
     let spr   = null;
+    let groupType = 0; // 0 = DEFAULT (stand), 1 = WALKING — only relevant for outfits 10.57+
+    let displayThing = null;
     let coords = { patternX: 0, patternY: 0, patternZ: 0, frame: 0, layer: null };
     let animator = null;
     let playing = false;
@@ -38,6 +40,8 @@ export function createThingDataView($host) {
     function setThing(nextThing, nextSpr) {
         thing = nextThing || null;
         spr   = nextSpr  || null;
+        groupType = 0;
+        refreshDisplayThing();
 
         if (!thing || !spr) {
             stop();
@@ -47,31 +51,77 @@ export function createThingDataView($host) {
             return;
         }
 
-        const size = compositeSize(thing);
+        applyGeometryDefaults();
+        rebuildAnimator();
+        render();
+    }
+
+    function setPose(nextGroupType) {
+        if (!thing) return;
+        const g = nextGroupType | 0;
+        if (g === groupType) return;
+        groupType = g;
+        refreshDisplayThing();
+        applyGeometryDefaults();
+        rebuildAnimator();
+        render();
+    }
+
+    // Pick the FrameGroup-derived view if outfits 10.57+ carry frameGroups[].
+    // Otherwise fall back to the ThingType itself (which has all fields on root).
+    function refreshDisplayThing() {
+        if (!thing) { displayThing = null; return; }
+        const groups = thing.frameGroups;
+        if (!Array.isArray(groups) || groups.length === 0) {
+            displayThing = thing;
+            return;
+        }
+        const g = groups[groupType] || groups[0];
+        if (!g) { displayThing = thing; return; }
+        // Layer the group's geometry over the underlying ThingType so callers
+        // still see id / category / flags from the real thing.
+        displayThing = Object.assign(Object.create(thing), {
+            width: g.width, height: g.height, exactSize: g.exactSize,
+            layers: g.layers,
+            patternX: g.patternX, patternY: g.patternY, patternZ: g.patternZ,
+            frames: g.frames,
+            spriteIndex: g.spriteIndex,
+            isAnimation: g.isAnimation,
+            animationMode: g.animationMode,
+            loopCount: g.loopCount,
+            startFrame: g.startFrame,
+            frameDurations: g.frameDurations,
+        });
+    }
+
+    function applyGeometryDefaults() {
+        const t = displayThing;
+        const size = compositeSize(t);
         canvas.width  = size.width;
         canvas.height = size.height;
 
         // Outfit convention from AS3 ThingDataView: patternX defaults to 2
         // (south-facing) so the preview looks right.
-        if (thing.category === "outfit") {
+        if (t.category === "outfit") {
             coords = {
-                patternX: Math.min(2, Math.max(0, thing.patternX - 1)),
+                patternX: Math.min(2, Math.max(0, t.patternX - 1)),
                 patternY: 0,
                 patternZ: 0,
                 frame: 0,
-                layer: thing.layers > 1 ? 0 : null,
+                layer: t.layers > 1 ? 0 : null,
             };
         } else {
             coords = { patternX: 0, patternY: 0, patternZ: 0, frame: 0, layer: null };
         }
+    }
 
-        if (thing.isAnimation) {
+    function rebuildAnimator() {
+        const t = displayThing;
+        if (t.isAnimation && t.frames > 1) {
             animator = new Animator({
-                frames: thing.frames,
-                frameDurations: thing.frameDurations,
-                category: thing.category,
-                // This is a preview/editor surface, so animated things should
-                // keep looping even when the DAT flag "animate always" is off.
+                frames: t.frames,
+                frameDurations: t.frameDurations,
+                category: t.category,
                 animateAlways: true,
                 startFrame: 0,
             });
@@ -80,13 +130,11 @@ export function createThingDataView($host) {
             animator = null;
             stop();
         }
-
-        render();
     }
 
     function render() {
-        if (!thing || !spr) return;
-        drawFrame(ctx, thing, spr, coords, {
+        if (!displayThing || !spr) return;
+        drawFrame(ctx, displayThing, spr, coords, {
             drawBlendLayer: coords.layer == null,
             layer: coords.layer,
         });
@@ -95,15 +143,17 @@ export function createThingDataView($host) {
     }
 
     function thingHint() {
-        if (!thing) return "";
-        const px = `pX ${coords.patternX}/${thing.patternX}`;
-        const py = thing.patternY > 1 ? ` pY ${coords.patternY}/${thing.patternY}` : "";
-        const pz = thing.patternZ > 1 ? ` pZ ${coords.patternZ}/${thing.patternZ}` : "";
-        const fr = thing.frames   > 1 ? ` frame ${coords.frame + 1}/${thing.frames}` : "";
-        const layer = thing.layers > 1
-            ? ` layer ${coords.layer == null ? "all" : coords.layer + 1}/${thing.layers}`
+        const t = displayThing;
+        if (!t) return "";
+        const px = `pX ${coords.patternX}/${t.patternX}`;
+        const py = t.patternY > 1 ? ` pY ${coords.patternY}/${t.patternY}` : "";
+        const pz = t.patternZ > 1 ? ` pZ ${coords.patternZ}/${t.patternZ}` : "";
+        const fr = t.frames   > 1 ? ` frame ${coords.frame + 1}/${t.frames}` : "";
+        const layer = t.layers > 1
+            ? ` layer ${coords.layer == null ? "all" : coords.layer + 1}/${t.layers}`
             : "";
-        return `${thing.category} ${thing.id} · ${px}${py}${pz}${fr}${layer}`;
+        const pose = (thing.frameGroups?.length > 1) ? ` · ${groupType === 1 ? "walking" : "stand"}` : "";
+        return `${t.category} ${t.id} · ${px}${py}${pz}${fr}${layer}${pose}`;
     }
 
     function play() {
@@ -134,40 +184,40 @@ export function createThingDataView($host) {
     }
 
     function setPatternX(v) {
-        if (!thing) return;
-        coords = { ...coords, patternX: clampPattern(v, thing.patternX) };
+        if (!displayThing) return;
+        coords = { ...coords, patternX: clampPattern(v, displayThing.patternX) };
         render();
     }
     function setPatternY(v) {
-        if (!thing) return;
-        coords = { ...coords, patternY: clampPattern(v, thing.patternY) };
+        if (!displayThing) return;
+        coords = { ...coords, patternY: clampPattern(v, displayThing.patternY) };
         render();
     }
     function setPatternZ(v) {
-        if (!thing) return;
-        coords = { ...coords, patternZ: clampPattern(v, thing.patternZ) };
+        if (!displayThing) return;
+        coords = { ...coords, patternZ: clampPattern(v, displayThing.patternZ) };
         render();
     }
     function setFrame(v) {
-        if (!thing) return;
-        const frames = Math.max(1, thing.frames | 0);
+        if (!displayThing) return;
+        const frames = Math.max(1, displayThing.frames | 0);
         const f = ((v | 0) % frames + frames) % frames;
         if (animator) animator.setFrame(f);
         coords = { ...coords, frame: f };
         render();
     }
     function setLayer(v) {
-        if (!thing) return;
+        if (!displayThing) return;
         if (v == null || v === "all") {
             coords = { ...coords, layer: null };
         } else {
-            coords = { ...coords, layer: clampPattern(v, thing.layers) };
+            coords = { ...coords, layer: clampPattern(v, displayThing.layers) };
         }
         render();
     }
 
     function emitChange() {
-        const snapshot = { thing, coords: { ...coords }, playing };
+        const snapshot = { thing: displayThing, coords: { ...coords }, playing, groupType };
         changeHandlers.forEach((h) => h(snapshot));
     }
 
@@ -178,6 +228,7 @@ export function createThingDataView($host) {
 
     return {
         setThing,
+        setPose,
         setPatternX,
         setPatternY,
         setPatternZ,
@@ -188,6 +239,11 @@ export function createThingDataView($host) {
         onChange(h) { changeHandlers.push(h); },
         get coords() { return { ...coords }; },
         get isPlaying() { return playing; },
-        get thing() { return thing; },
+        // displayThing is what the preview shows (FrameGroup-substituted for
+        // outfits 10.57+). `rawThing` is the underlying ThingType — useful when
+        // a caller needs to know whether multiple FrameGroups are available.
+        get thing()      { return displayThing; },
+        get rawThing()   { return thing; },
+        get groupType()  { return groupType; },
     };
 }

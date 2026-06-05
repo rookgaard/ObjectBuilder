@@ -79,6 +79,16 @@ export function renderPreviewPanel($host) {
                         </div>
                     </div>
 
+                    <div class="preview-control-group" id="prev-pose-group" hidden>
+                        <div class="preview-control-title">
+                            <span>Pose</span>
+                        </div>
+                        <div class="preview-controls__row">
+                            <button type="button" class="icon-button preview-pose-btn is-active" data-pose="0">Stand</button>
+                            <button type="button" class="icon-button preview-pose-btn" data-pose="1">Walking</button>
+                        </div>
+                    </div>
+
                     <div class="preview-control-group" id="prev-frame-group" hidden>
                         <div class="preview-control-title">
                             <span>Frame</span>
@@ -158,6 +168,10 @@ function bindControls() {
 
     $controls.on("click.preview", ".preview-direction-btn", function () {
         setDirection(String($(this).data("dir")));
+    });
+
+    $controls.on("click.preview", ".preview-pose-btn", function () {
+        tdv?.setPose(Number($(this).data("pose")));
     });
 
     $controls.on("click.preview", "#prev-playpause", () => {
@@ -247,7 +261,9 @@ function syncPreviewControls() {
     if (!tdv) return;
 
     const thing = tdv.thing;
+    const rawThing = tdv.rawThing;
     const coords = tdv.coords;
+    const groupType = tdv.groupType;
     const $controls = $("#preview-controls");
 
     if (!thing) {
@@ -259,6 +275,7 @@ function syncPreviewControls() {
     const isMissile = thing.category === "missile";
     const frameCount = Math.max(1, thing.frames | 0);
     const layerCount = Math.max(1, thing.layers | 0);
+    const hasPose = isOutfit && Array.isArray(rawThing?.frameGroups) && rawThing.frameGroups.length > 1;
     const showDirection = isOutfit || isMissile;
     const showFrame = frameCount > 1;
     const showAddon = isOutfit && thing.patternY > 1;
@@ -267,6 +284,10 @@ function syncPreviewControls() {
     const showVariant = !showDirection && (
         thing.patternX > 1 || thing.patternY > 1 || thing.patternZ > 1
     );
+
+    $("#prev-pose-group").prop("hidden", !hasPose);
+    $("#prev-pose-group .preview-pose-btn").removeClass("is-active");
+    $(`#prev-pose-group .preview-pose-btn[data-pose="${groupType ?? 0}"]`).addClass("is-active");
 
     $("#prev-direction-group")
         .prop("hidden", !showDirection)
@@ -305,7 +326,7 @@ function syncPreviewControls() {
     $("#prev-pz").attr("max", Math.max(0, thing.patternZ - 1)).val(coords.patternZ);
 
     $controls.prop("hidden", !(
-        showDirection || showFrame || showAddon || showMount || showLayer || showVariant
+        hasPose || showDirection || showFrame || showAddon || showMount || showLayer || showVariant
     ));
 }
 
