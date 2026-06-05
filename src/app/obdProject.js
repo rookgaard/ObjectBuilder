@@ -5,20 +5,29 @@ import { downloadBytes } from "./compileProject.js";
 import { getState, getSelectedThing, addThing } from "../store/index.js";
 import {
     collectObdSprites,
+    collectObdSpritesByGroup,
     decodeObd,
-    encodeObdV2,
+    encodeObd,
     isEmptySpritePixels,
 } from "../formats/obd/ObdCodec.js";
 import { getLzmaCodec } from "../formats/obd/lzmaCodec.js";
+import { OUTFIT } from "../core/things/ThingCategory.js";
 
 export async function exportSelectedThingToObd() {
     const project = getState().project;
     const thing = getSelectedThing();
     if (!project || !thing) throw new Error("No object selected");
 
-    const sprites = collectObdSprites(thing, project.spr);
+    // For outfits with multiple FrameGroups (10.57+) collect sprites per group
+    // so the V3 writer can emit them. encodeObd() picks V2 vs V3 automatically.
+    const usesGroups = thing.category === OUTFIT
+        && Array.isArray(thing.frameGroups)
+        && thing.frameGroups.filter(Boolean).length > 1;
+    const sprites = usesGroups
+        ? collectObdSpritesByGroup(thing, project.spr)
+        : collectObdSprites(thing, project.spr);
     const codec = await getLzmaCodec();
-    const bytes = await encodeObdV2({
+    const bytes = await encodeObd({
         clientVersion: project.version.value,
         thing,
         sprites,
@@ -50,35 +59,57 @@ export function importObdData(data) {
     if (!project) throw new Error("No project loaded");
 
     const thing = data.thing.clone();
-    const sprites = data.sprites || [];
-    const nextSpriteIndex = new Array(sprites.length);
     let spritesAdded = 0;
 
+    // V3 outfit: sprites is `{groupType: [...]}`; remap each group's spriteIndex
+    // independently and update the FrameGroup's spriteIndex in-place.
+    if (data.sprites && !Array.isArray(data.sprites) && typeof data.sprites === "object") {
+        for (const key of Object.keys(data.sprites)) {
+            const groupType = Number(key);
+            const list = data.sprites[key];
+            const fg = thing.frameGroups?.[groupType];
+            if (!fg || !Array.isArray(list)) continue;
+            const remapped = remapSpriteList(list, project.spr);
+            fg.spriteIndex = remapped.ids;
+            spritesAdded += remapped.added;
+        }
+        // Mirror group 0 onto the root for legacy callers (editor / preview).
+        const root = thing.frameGroups?.[0];
+        if (root) thing.spriteIndex = root.spriteIndex;
+    } else {
+        // V2 / V3-flat: single flat list of sprites; current path.
+        const sprites = data.sprites || [];
+        const remapped = remapSpriteList(sprites, project.spr);
+        thing.spriteIndex = remapped.ids;
+        spritesAdded = remapped.added;
+    }
+
+    const id = addThing(thing.category, thing);
+    return { id, category: thing.category, spritesAdded, clientVersion: data.clientVersion };
+}
+
+function remapSpriteList(sprites, spr) {
+    const ids = new Array(sprites.length);
+    let added = 0;
     for (let i = 0; i < sprites.length; i++) {
         const sprite = sprites[i];
         const pixels = sprite?.pixels;
         if (isEmptySpritePixels(pixels)) {
-            nextSpriteIndex[i] = 0;
+            ids[i] = 0;
             continue;
         }
-
         const existingId = sprite.id | 0;
-        const existingPixels = existingId > 0 && project.spr.hasSprite(existingId)
-            ? project.spr.getSpritePixels(existingId)
+        const existingPixels = existingId > 0 && spr.hasSprite(existingId)
+            ? spr.getSpritePixels(existingId)
             : null;
-
         if (existingPixels && pixelsEqual(existingPixels, pixels)) {
-            nextSpriteIndex[i] = existingId;
+            ids[i] = existingId;
             continue;
         }
-
-        nextSpriteIndex[i] = project.spr.addSprite(pixels);
-        spritesAdded++;
+        ids[i] = spr.addSprite(pixels);
+        added++;
     }
-
-    thing.spriteIndex = nextSpriteIndex;
-    const id = addThing(thing.category, thing);
-    return { id, category: thing.category, spritesAdded, clientVersion: data.clientVersion };
+    return { ids, added };
 }
 
 function pickObdFile() {

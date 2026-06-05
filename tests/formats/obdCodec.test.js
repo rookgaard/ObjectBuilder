@@ -2,15 +2,20 @@ import { describe, it, assert, assertEqual, assertBytesEqual } from "../runner.j
 import {
     decodeObd,
     decodeObdPayloadV2,
+    decodeObdPayloadV3,
     encodeObdPayloadV2,
+    encodeObdPayloadV3,
     encodeObdV2,
+    encodeObd,
 } from "../../src/formats/obd/ObdCodec.js";
-import { OBD_VERSION_2 } from "../../src/formats/obd/ObdFlags.js";
+import { OBD_VERSION_2, OBD_VERSION_3 } from "../../src/formats/obd/ObdFlags.js";
 import { BinaryReader } from "../../src/core/binary/BinaryReader.js";
 import { FrameDuration } from "../../src/core/animation/FrameDuration.js";
+import { FrameGroup } from "../../src/core/animation/FrameGroup.js";
+import { DEFAULT as GROUP_DEFAULT, WALKING as GROUP_WALKING } from "../../src/core/animation/FrameGroupType.js";
 import { SPRITE_BYTES } from "../../src/core/sprites/spriteRle.js";
 import { ThingType } from "../../src/core/things/ThingType.js";
-import { ITEM } from "../../src/core/things/ThingCategory.js";
+import { ITEM, OUTFIT } from "../../src/core/things/ThingCategory.js";
 
 function pixels(seed) {
     const out = new Uint8Array(SPRITE_BYTES);
@@ -151,5 +156,99 @@ describe("OBD 2.0 codec", () => {
         assertEqual(decoded.thing.category, ITEM);
         assertEqual(decoded.sprites[3].id, 14);
         assertBytesEqual(decoded.sprites[3].pixels, data.sprites[3].pixels);
+    });
+});
+
+describe("OBD 3.0 codec", () => {
+    function makeOutfitWithGroups() {
+        const t = new ThingType();
+        t.id = 128;
+        t.category = OUTFIT;
+
+        const def = new FrameGroup();
+        def.type = GROUP_DEFAULT;
+        def.layers = 2;
+        def.patternX = 4;
+        def.frames = 1;
+        def.spriteIndex = [];
+        for (let i = 0; i < def.getTotalSprites(); i++) def.spriteIndex.push(100 + i);
+
+        const walk = new FrameGroup();
+        walk.type = GROUP_WALKING;
+        walk.layers = 2;
+        walk.patternX = 4;
+        walk.frames = 3;
+        walk.isAnimation = true;
+        walk.frameDurations = [
+            new FrameDuration(200, 200),
+            new FrameDuration(200, 200),
+            new FrameDuration(200, 200),
+        ];
+        walk.spriteIndex = [];
+        for (let i = 0; i < walk.getTotalSprites(); i++) walk.spriteIndex.push(500 + i);
+
+        t.frameGroups = [];
+        t.frameGroups[GROUP_DEFAULT] = def;
+        t.frameGroups[GROUP_WALKING] = walk;
+        return { thing: t, def, walk };
+    }
+
+    function makeGroupPixels(group, count) {
+        const out = [];
+        for (let i = 0; i < count; i++) {
+            const p = new Uint8Array(SPRITE_BYTES);
+            for (let j = 0; j < p.length; j++) p[j] = (group * 0x40 + i + j) & 0xFF;
+            out.push({ id: (group === 0 ? 100 : 500) + i, pixels: p });
+        }
+        return out;
+    }
+
+    it("round-trips a 2-group outfit through V3", () => {
+        const { thing, def, walk } = makeOutfitWithGroups();
+        const sprites = {
+            [GROUP_DEFAULT]: makeGroupPixels(0, def.getTotalSprites()),
+            [GROUP_WALKING]: makeGroupPixels(1, walk.getTotalSprites()),
+        };
+
+        const payload = encodeObdPayloadV3({ clientVersion: 1098, thing, sprites });
+
+        const reader = new BinaryReader(payload);
+        assertEqual(reader.readUint16(), OBD_VERSION_3, "OBD version");
+        assertEqual(reader.readUint16(), 1098, "client version");
+        assertEqual(reader.readUint8(), 2, "outfit category");
+
+        const decoded = decodeObdPayloadV3(payload);
+        assertEqual(decoded.obdVersion, OBD_VERSION_3);
+        assertEqual(decoded.thing.category, OUTFIT);
+        assertEqual(decoded.thing.frameGroups.length, 2);
+        assertEqual(decoded.thing.frameGroups[GROUP_WALKING].frames, 3);
+        assertEqual(decoded.thing.frameGroups[GROUP_WALKING].isAnimation, true);
+        assertBytesEqual(
+            decoded.sprites[GROUP_WALKING][0].pixels,
+            sprites[GROUP_WALKING][0].pixels,
+        );
+    });
+
+    it("encodeObd auto-picks V3 for outfits with multiple frame groups", async () => {
+        const { thing, def, walk } = makeOutfitWithGroups();
+        const sprites = {
+            [GROUP_DEFAULT]: makeGroupPixels(0, def.getTotalSprites()),
+            [GROUP_WALKING]: makeGroupPixels(1, walk.getTotalSprites()),
+        };
+        const bytes = await encodeObd({ clientVersion: 1098, thing, sprites }, identityCodec);
+        // Identity codec returns the raw payload — read its first u16.
+        const head = new BinaryReader(bytes);
+        assertEqual(head.readUint16(), OBD_VERSION_3, "uses V3");
+
+        const decoded = await decodeObd(bytes, identityCodec);
+        assertEqual(decoded.obdVersion, OBD_VERSION_3);
+        assertEqual(decoded.thing.frameGroups.length, 2);
+    });
+
+    it("encodeObd falls back to V2 for items / single-group things", async () => {
+        const data = makeData();
+        const bytes = await encodeObd(data, identityCodec);
+        const head = new BinaryReader(bytes);
+        assertEqual(head.readUint16(), OBD_VERSION_2, "items still use V2");
     });
 });

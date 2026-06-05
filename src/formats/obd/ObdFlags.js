@@ -3,6 +3,7 @@
 // AS3 reference: ObjectBuilder-AS/src/otlib/obd/OBDEncoder.as
 
 export const OBD_VERSION_2 = 200;
+export const OBD_VERSION_3 = 300;
 
 export const FLAGS = Object.freeze({
     GROUND: 0x00,
