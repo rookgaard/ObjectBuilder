@@ -1,8 +1,10 @@
 // "Open Project" modal — pick a Tibia.dat + Tibia.spr pair and a client
 // version, then open them. AS3 reference: ob.components.OpenAssetsWindow.
 //
-// On success we read the two File objects as ArrayBuffers and feed them to
-// app/loadProject.buildProject — same path as the dev reference-load buttons.
+// Single file picker with `multiple` — drop both files in at once and the
+// dialog assigns them to the .dat / .spr slot by signature (falls back to
+// the .dat / .spr file extension). When the .dat signature matches a known
+// entry in versions.json, the version dropdown is auto-selected.
 
 import { showModal } from "../widgets/modal.js";
 import { loadVersions } from "../../app/loadProject.js";
@@ -16,13 +18,14 @@ export async function showOpenDialog() {
     const $body = $(`
         <div class="form-grid" style="grid-template-columns: 1fr;">
             <label>
-                <span>Tibia.dat</span>
-                <input type="file" accept=".dat,application/octet-stream" id="open-dat" class="control">
+                <span>Tibia.dat + Tibia.spr</span>
+                <input type="file" id="open-files" class="control"
+                       accept=".dat,.spr,application/octet-stream"
+                       multiple>
             </label>
-            <label>
-                <span>Tibia.spr</span>
-                <input type="file" accept=".spr,application/octet-stream" id="open-spr" class="control">
-            </label>
+            <div class="open-detected" id="open-detected" hidden>
+                <ul class="open-detected__list"></ul>
+            </div>
             <label>
                 <span>Client version</span>
                 <select id="open-version" class="control"></select>
@@ -52,6 +55,17 @@ export async function showOpenDialog() {
     }
     $select.val("7.72");
 
+    // Holds the resolved File pair for OK. Repopulated on every change.
+    let detected = { datFile: null, sprFile: null, matchedVersion: null };
+
+    $body.find("#open-files").on("change.opendlg", async function () {
+        detected = await classifyFiles(this.files, versions);
+        renderDetected($body, detected);
+        if (detected.matchedVersion) {
+            $select.val(detected.matchedVersion.valueStr);
+        }
+    });
+
     const action = await showModal({
         title: "Open Project",
         body: $body,
@@ -62,13 +76,12 @@ export async function showOpenDialog() {
                 value: "ok",
                 primary: true,
                 onValidate: ($host) => {
-                    const ok = $host.find("#open-dat")[0].files.length > 0
-                            && $host.find("#open-spr")[0].files.length > 0;
-                    if (!ok) {
-                        $host.find("p.error-line").remove();
-                        $host.append('<p class="error-line">Select both Tibia.dat and Tibia.spr.</p>');
+                    $host.find("p.error-line").remove();
+                    if (!detected.datFile || !detected.sprFile) {
+                        $host.append('<p class="error-line">Pick both Tibia.dat and Tibia.spr (you can select them together).</p>');
+                        return false;
                     }
-                    return ok;
+                    return true;
                 },
             },
         ],
@@ -76,9 +89,7 @@ export async function showOpenDialog() {
 
     if (action !== "ok") return null;
 
-    const datFile = $body.find("#open-dat")[0].files[0];
-    const sprFile = $body.find("#open-spr")[0].files[0];
-    const verStr  = String($body.find("#open-version").val());
+    const verStr  = String($select.val());
     const version = versions.find((v) => v.valueStr === verStr);
     const options = {
         extended:           $body.find("#open-extended").is(":checked")           || undefined,
@@ -89,9 +100,95 @@ export async function showOpenDialog() {
     };
 
     const [datBuffer, sprBuffer] = await Promise.all([
-        datFile.arrayBuffer(),
-        sprFile.arrayBuffer(),
+        detected.datFile.arrayBuffer(),
+        detected.sprFile.arrayBuffer(),
     ]);
 
     return buildProject({ datBuffer, sprBuffer, version, options });
+}
+
+/**
+ * Partitions a FileList into {datFile, sprFile} by reading the first 4 bytes
+ * of each (u32 LE) and matching against known signatures from versions.json.
+ * If no signature matches, falls back to the file extension. Ambiguous picks
+ * (two .dat-looking files, etc.) return null for the conflicting slot.
+ */
+async function classifyFiles(fileList, versions) {
+    const datSigs = new Set(versions.map((v) => parseHex(v.datSignature)));
+    const sprSigs = new Set(versions.map((v) => parseHex(v.sprSignature)));
+
+    let datFile = null;
+    let sprFile = null;
+    let matchedVersion = null;
+
+    for (const file of Array.from(fileList || [])) {
+        const sig = await readU32LE(file);
+        const lower = file.name.toLowerCase();
+
+        const looksDatBySig = sig !== null && datSigs.has(sig);
+        const looksSprBySig = sig !== null && sprSigs.has(sig);
+        const looksDatByExt = lower.endsWith(".dat");
+        const looksSprByExt = lower.endsWith(".spr");
+
+        if ((looksDatBySig || looksDatByExt) && !datFile) {
+            datFile = file;
+            if (looksDatBySig) {
+                matchedVersion = versions.find((v) => parseHex(v.datSignature) === sig) || matchedVersion;
+            }
+        } else if ((looksSprBySig || looksSprByExt) && !sprFile) {
+            sprFile = file;
+        }
+    }
+
+    return { datFile, sprFile, matchedVersion };
+}
+
+function renderDetected($host, detected) {
+    const $box = $host.find("#open-detected");
+    const $list = $box.find(".open-detected__list").empty();
+    if (!detected.datFile && !detected.sprFile) {
+        $box.prop("hidden", true);
+        return;
+    }
+    $box.prop("hidden", false);
+    if (detected.datFile) {
+        const verLabel = detected.matchedVersion
+            ? ` — version ${detected.matchedVersion.valueStr}`
+            : "";
+        $list.append(`<li><strong>.dat</strong>: ${escapeHtml(detected.datFile.name)} (${formatBytes(detected.datFile.size)})${verLabel}</li>`);
+    }
+    if (detected.sprFile) {
+        $list.append(`<li><strong>.spr</strong>: ${escapeHtml(detected.sprFile.name)} (${formatBytes(detected.sprFile.size)})</li>`);
+    }
+}
+
+async function readU32LE(file) {
+    try {
+        const slice = await file.slice(0, 4).arrayBuffer();
+        if (slice.byteLength < 4) return null;
+        return new DataView(slice).getUint32(0, true) >>> 0;
+    } catch {
+        return null;
+    }
+}
+
+function parseHex(s) {
+    if (typeof s === "number") return s >>> 0;
+    if (typeof s !== "string") return 0;
+    const cleaned = s.startsWith("0x") || s.startsWith("0X") ? s.slice(2) : s;
+    return (parseInt(cleaned, 16) >>> 0) || 0;
+}
+
+function formatBytes(n) {
+    if (n < 1024) return `${n} B`;
+    if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} kB`;
+    return `${(n / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function escapeHtml(s) {
+    return String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
 }
