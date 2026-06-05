@@ -38,6 +38,9 @@ export const F = Object.freeze({
     CLOTH:             0x21,
     MARKET_ITEM:       0x22,
     DEFAULT_ACTION:    0x23,
+    WRAPPABLE:         0x24,
+    UNWRAPPABLE:       0x25,
+    TOP_EFFECT:        0x26,
     USABLE:            0xFE,
     LAST_FLAG:         0xFF,
 });

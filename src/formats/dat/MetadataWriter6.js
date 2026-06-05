@@ -2,7 +2,7 @@
 // AS3 reference: otlib.things.MetadataWriter6.
 
 import F from "./MetadataFlags6.js";
-import { ITEM } from "../../core/things/ThingCategory.js";
+import { ITEM, EFFECT } from "../../core/things/ThingCategory.js";
 
 export { writeTexturePatterns } from "./MetadataWriter.js";
 export const GENERATION = 6;
@@ -16,6 +16,7 @@ export function writeProperties(w, t) {
     if (t.hasLight)  { w.writeUint8(F.HAS_LIGHT);  w.writeUint16(t.lightLevel); w.writeUint16(t.lightColor); }
     if (t.hasOffset) { w.writeUint8(F.HAS_OFFSET); w.writeUint16(t.offsetX);    w.writeUint16(t.offsetY); }
     if (t.animateAlways) w.writeUint8(F.ANIMATE_ALWAYS);
+    if (t.topEffect && t.category === EFFECT) w.writeUint8(F.TOP_EFFECT);
     w.writeUint8(F.LAST_FLAG);
 }
 
@@ -68,6 +69,8 @@ export function writeItemProperties(w, t) {
         w.writeUint16(t.marketRestrictLevel);
     }
     if (t.hasDefaultAction) { w.writeUint8(F.DEFAULT_ACTION); w.writeUint16(t.defaultAction); }
+    if (t.wrappable)     w.writeUint8(F.WRAPPABLE);
+    if (t.unwrappable)   w.writeUint8(F.UNWRAPPABLE);
     if (t.usable)        w.writeUint8(F.USABLE);
     w.writeUint8(F.LAST_FLAG);
 }

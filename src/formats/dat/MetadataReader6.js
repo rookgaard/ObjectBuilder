@@ -67,6 +67,9 @@ export function readProperties(reader, type) {
                 break;
             }
             case F.DEFAULT_ACTION:    type.hasDefaultAction = true; type.defaultAction = reader.readUint16(); break;
+            case F.WRAPPABLE:         type.wrappable = true; break;
+            case F.UNWRAPPABLE:       type.unwrappable = true; break;
+            case F.TOP_EFFECT:        type.topEffect = true; break;
             case F.USABLE:            type.usable = true; break;
             default:
                 throw new Error(
