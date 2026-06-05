@@ -1,6 +1,7 @@
 // Top toolbar — chunky buttons for the most common File-menu actions.
 
 import { STRINGS } from "./strings.js";
+import { loadReferenceProject } from "../app/loadProject.js";
 
 const $ = window.jQuery;
 
@@ -13,6 +14,8 @@ const BUTTONS = [
     { id: "find",    label: "Find",    glyph: "🔍" },
     { id: "undo",    label: "Undo",    glyph: "↶"  },
     { id: "redo",    label: "Redo",    glyph: "↷"  },
+    { sep: true },
+    { id: "loadRef", label: "Load 7.72 (dev)", glyph: "⚡", modifier: "is-dev" },
 ];
 
 export function renderToolbar($host) {
@@ -24,9 +27,10 @@ export function renderToolbar($host) {
             return;
         }
         const label = STRINGS.toolbar[b.id] || b.label;
+        const mod = b.modifier ? ` toolbar__btn--${b.modifier}` : "";
         $bar.append(`
             <li>
-                <button type="button" class="toolbar__btn" data-cmd="toolbar.${b.id}" title="${label}">
+                <button type="button" class="toolbar__btn${mod}" data-cmd="toolbar.${b.id}" title="${label}">
                     <span class="toolbar__glyph" aria-hidden="true">${b.glyph}</span>
                     <span class="toolbar__label">${label}</span>
                 </button>
@@ -38,6 +42,36 @@ export function renderToolbar($host) {
 
     $host.on("click", ".toolbar__btn", function () {
         const cmd = $(this).data("cmd");
-        console.info(`[toolbar] TODO: command "${cmd}" is not wired up yet.`);
+        runToolbarCommand(cmd, $(this));
     });
+}
+
+function runToolbarCommand(cmd, $btn) {
+    if (cmd === "toolbar.loadRef") {
+        const $status = $(".app-status");
+        $btn.prop("disabled", true);
+        $status.text("Loading reference Tibia.dat + Tibia.spr…");
+
+        loadReferenceProject()
+            .then((project) => {
+                $status.text(
+                    `Loaded ${project.version.valueStr} — ` +
+                    `${project.dat.itemsCount} items, ` +
+                    `${project.dat.outfitsCount} outfits, ` +
+                    `${project.dat.effectsCount} effects, ` +
+                    `${project.dat.missilesCount} missiles, ` +
+                    `${project.spr.spritesCount} sprites.`
+                );
+            })
+            .catch((err) => {
+                console.error("[toolbar] loadReferenceProject failed", err);
+                $status.text(`Load failed: ${err.message}`);
+            })
+            .finally(() => {
+                $btn.prop("disabled", false);
+            });
+        return;
+    }
+
+    console.info(`[toolbar] TODO: command "${cmd}" is not wired up yet.`);
 }

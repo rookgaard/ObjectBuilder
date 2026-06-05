@@ -257,8 +257,9 @@ signatures (user calls them 7.72) so the version dropdown shows what the user ex
 - [x] Stage 1 — UI shell mock (4-column layout, splitters, menu, toolbar, editor tabs, mock data).
 - [x] Stage 2 — Binary I/O + sprite RLE codec + ThingType/Version/FrameDuration; in-browser PASS/
       FAIL runner at <http://127.0.0.1/tests.html>.
-- [ ] Stage 3 — Load Tibia 7.72 (`.dat` + `.spr`) end-to-end, read-only.
-- [ ] Stage 4 — Browse the four categories (lists + numeric stepper).
+- [x] Stage 3 — DAT gen-3 reader + SPR lazy reader + projectStore + UI "Load 7.72 (dev)" wires
+      real counts/sprites into the shell. Integration tests against `references/Tibia.{dat,spr}`.
+- [ ] Stage 4 — Browse the four categories (virtualized list, real read-only editor display).
 - [ ] Stage 5 — Live preview + animation rendering.
 - [ ] Stage 6 — Edit attributes + flags, in-memory.
 - [ ] Stage 7 — Re-compile `.dat` + `.spr` and download.

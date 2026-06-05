@@ -1,7 +1,21 @@
-// src/store/ — ThingTypeStorage, SpriteStorage. Mutable, event-emitting.
-// Bridges binary formats (src/formats/) to the UI (src/ui/). May use jQuery
-// purely as an event bus ($({}).trigger / on), nothing DOM-related. Stage 3+.
+// src/store/ — app-wide mutable state. Layer entry point: re-exports the
+// public surface of projectStore.
+
+export {
+    EVENTS,
+    getState,
+    setProject,
+    setSelectedCategory,
+    setSelectedThingId,
+    setSelectedSpriteId,
+    on,
+    off,
+    getSelectedThing,
+    listFor,
+    countFor,
+    minIdFor,
+    maxIdFor,
+} from "./projectStore.js";
 
 export const LAYER_NAME = "store";
-
 console.log(`[ObjectBuilder-JS] layer loaded: ${LAYER_NAME}`);

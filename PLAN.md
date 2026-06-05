@@ -29,34 +29,41 @@ These are decided. No need to re-ask the user.
 
 ## Current focus
 
-> **Stage 2 — DONE** (2026-06-05). Pure-core primitives landed and verified:
-> - `src/core/binary/{BinaryReader,BinaryWriter}.js` — little-endian, growable, supports
->   seek + overwrite (the AS3 offset-table patch pattern).
-> - `src/core/sprites/spriteRle.js` — `encodeSpritePixels` / `decodeSpritePixels` ported byte-for-
->   byte from `Sprite.compressPixels` / `uncompressPixels` (both `transparent: false/true` modes,
->   AS3 buffer order A,R,G,B).
-> - `src/core/sprites/spritePixels.js` — ARGB ↔ RGBA conversions for HTML `ImageData`.
-> - `src/core/things/{ThingType,ThingCategory,ThingProperty}.js` — full ThingType data class
->   (75+ fields), `getSpriteIndex/getTotalSprites/getSpriteSheetSize/clone/create`.
-> - `src/core/Version.js` + `src/core/animation/FrameDuration.js`.
-> - `src/core/index.js` re-exports the public surface.
-> - `tests.html` + `tests/{runner,index}.js` + `tests/runner.css` — in-browser PASS/FAIL runner.
-> - `tests/core/{binary,spriteRle,thingType}.test.js` — round-trip BinaryReader↔Writer for all int
->   sizes, RLE for (transparent / opaque / mixed / `transparent:true`), ThingCategory helpers,
->   `ThingType.create` defaults per category, hand-computed `getSpriteIndex` values for outfits
->   and items, `getSpriteSheetSize` math, `Version.equals` + `versionFromJson` hex parsing.
-> - Verified: all 15 new modules pass `node --check`; a node smoke script confirmed encode/decode
->   lengths and `getSpriteIndex(outfit, ..)` = 0/1/2/8 matching AS3.
+> **Stage 3 — DONE** (2026-06-05). Real 7.72 files load end-to-end, read-only:
+> - `src/formats/dat/MetadataFlags3.js` + `MetadataReader.js` (base `readTexturePatterns`)
+>   + `MetadataReader3.js` (gen-3 flag dispatch with safety cap + AS3-style throw on unknown flag).
+> - `src/formats/dat/readerRegistry.js` — picks the reader by `version.value` band; gens 1/2/4/5/6
+>   stub-throw "not implemented yet" so the registry already maps the full layout.
+> - `src/formats/dat/DatLoader.js` — parses the header (sig + 4 × u16 counts), loops per category,
+>   enforces `bytesAvailable === 0` at end in strict mode.
+> - `src/formats/spr/SprFile.js` — opens an ArrayBuffer, reads header (u32 sig + u16/u32 count),
+>   lazy-decodes sprites via the offset table, caches decoded ARGB buffers per id, handles
+>   address-0 / out-of-range cases.
+> - `src/store/projectStore.js` — minimal app state (current project + selection) + jQuery
+>   `$({})` event bus with `EVENTS.PROJECT_CHANGE` / `SELECTION_CHANGE`.
+> - `src/app/loadProject.js` — `loadVersions()` (memoized `versions.json` fetch), `findVersion()`,
+>   `buildProject()` and the `loadReferenceProject()` dev shortcut (fetches `/references/`).
+> - UI wired to real data: a blue **"Load 7.72 (dev)"** toolbar button fires
+>   `loadReferenceProject()`; on success the Files panel updates counts, the Object list windows
+>   200 ids around the selection, the Preview canvas renders the selected thing's first sprite via
+>   `argbToImageData()`, and the Sprite panel renders one mini-canvas per `spriteIndex` slot.
+>   Status bar logs the load summary.
+> - Tests: `tests/formats/datLoader.test.js` (synthetic gen-3 DAT — header, flags, missing ids,
+>   unknown-flag throw); `tests/formats/sprFile.test.js` (synthetic 3-sprite SPR — header, empty
+>   address, mixed runs, cache reuse); `tests/formats/integration_7_72.test.js` (fetches the real
+>   `references/Tibia.dat` + `Tibia.spr`, asserts the same 5157/254/26/16/10423 counts).
+> - Verified: all 41 modules pass `node --check`; a Node smoke script parsed the actual DAT in
+>   ~43 ms and decoded item 100's first sprite (4096 bytes, A=255 R=41 G=0 B=0).
 >
-> **Now active: Stage 3 — Load Tibia 7.72 `.dat` + `.spr`, read-only.**
+> **Now active: Stage 4 — Browse the 4 categories.**
 >
-> **Next concrete step**: open <http://127.0.0.1/tests.html> in the browser to confirm every
-> Stage-2 test row is green (PASS/FAIL is also reflected in the page title). Then start the DAT
-> loader: `src/formats/dat/MetadataFlags3.js` (port of `MetadataFlags3.as`), followed by
-> `src/formats/dat/MetadataReader.js` (base `readTexturePatterns`) and
-> `src/formats/dat/MetadataReader3.js` (the gen-3 flag dispatch). Use the AS3 files at
-> `../ObjectBuilder-AS/src/otlib/things/Metadata{Flags3,Reader,Reader3}.as` as the spec — copy the
-> flag-byte values verbatim. No UI work yet in this sub-task.
+> **Next concrete step**: open <http://127.0.0.1/tests.html> in the browser to confirm every test
+> row is green (including the new integration suite). Then upgrade Stage 3's "first 200 ids
+> window" to a category-aware browser: numeric stepper jumps to any id (with virtualized scroll
+> if perf needs it), arrow keys move selection in the Object list, and selecting a thing
+> populates the ThingType Editor with READ-ONLY values from the real `ThingType` (no edits yet,
+> that's Stage 6). Start with `src/ui/panels/thingListPanel.js` — promote the windowed render to
+> a proper virtual list (only render visible rows, recycle on scroll).
 >
 > Update this section the moment a sub-task closes.
 
@@ -243,11 +250,13 @@ Targets `MetadataReader3` band (7.55–7.72).
   static server serves the `references/` folder. Remove this button once we're past Stage 7.
 
 **Exit criteria**
-- "Load reference 7.72" reads both files and the UI displays itemsCount=5157, outfitsCount=254,
-  effectsCount=26, missilesCount=16 — matching the header inspection in CLAUDE.md.
-- A hand-picked item (e.g. id=100) renders its sprite in the preview canvas.
-- No JS errors, no NaN sprite coordinates.
-- DAT file is consumed fully (`bytesAvailable == 0` at end) — same invariant the AS3 enforces.
+- [x] "Load 7.72 (dev)" reads both files and the UI displays itemsCount=5157, outfitsCount=254,
+      effectsCount=26, missilesCount=16, spritesCount=10423 — matches the header inspection.
+- [x] A hand-picked item (id=100) renders its sprite in the preview canvas. Verified via Node
+      smoke against `references/Tibia.dat` + `Tibia.spr` (item 100, first sprite id 131, decoded
+      4096 bytes, first pixel A=255 R=41 G=0 B=0).
+- [x] No JS errors, no NaN sprite coordinates (strict mode validates throughout the readers).
+- [x] DAT file is consumed fully (`bytesAvailable == 0`) — `strict: true` throws otherwise.
 
 ---
 
