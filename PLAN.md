@@ -12,8 +12,10 @@ These are decided. No need to re-ask the user.
 
 - **Stack**: plain HTML + CSS + ES modules. **jQuery 4.0.0** (pinned, via `code.jquery.com` CDN)
   for DOM/UI. Do not bump the jQuery version without owner sign-off.
-- **No build tool, no transpiler.** Files served as-is by any static HTTP server
-  (`python -m http.server 8000` or `npx serve .`). `file://` won't work because of ES modules.
+- **No build tool, no transpiler.** Files served as-is. Owner runs a persistent `server.exe` in
+  this folder that exposes the tree at <http://127.0.0.1/> on port 80. Do not start a second HTTP
+  server from inside the agent — `curl` against the running one when verifying. `file://` won't
+  work because of ES modules.
 - **Language**: vanilla JavaScript (ES2022+). No TypeScript, no JSX.
 - **UI strings**: English only (matches AS3 default).
 - **Project owner ↔ Claude communication language**: Polish. Committed files stay English.
@@ -27,20 +29,26 @@ These are decided. No need to re-ask the user.
 
 ## Current focus
 
-> **Stage 0 — DONE** (2026-06-05). Scaffold in place: `index.html` (jQuery 4.0.0 from CDN +
-> `src/app/main.js` as module), `style.css` (dark `#494949` theme), six stub modules across
-> `src/{core,formats,store,workers,ui,app}/`, `public/versions.json` (79 rows, 7.72 at top),
-> `.editorconfig`. Smoke-tested via `python -m http.server 8765`: HTTP 200 on `/`, `/style.css`,
-> `/src/app/main.js`, `/public/versions.json`; JSON parses with 79 entries, first row
-> `7.72 / 0x439D5A33`.
+> **Stage 1 — DONE** (2026-06-05). The shell renders end-to-end against mock data:
+> - 4-column layout (`src/ui/layout.js`) with draggable splitters (`src/ui/splitter.js`,
+>   5 px handles, flex-basis driven, `min`/`max` per panel from `data-min` / `data-max`).
+> - Menu bar (`src/ui/menu.js`) with File / Edit / View / Tools / Window / Help dropdowns; only the
+>   three View toggles are wired (the rest log a TODO to the console). Outside-click closes drops.
+> - Toolbar (`src/ui/toolbar.js`) with New / Open / Compile / Save / Find / Undo / Redo stubs.
+> - ThingType Editor (`src/ui/panels/editorPanel.js`) with Texture / Properties / Flags tabs and
+>   disabled mock fields.
+> - Preview / Object list / Sprite list panels with mock data from `src/app/mockData.js`.
+> - Category dropdown switches the mock list (item / outfit / effect / missile).
+> - All 16 modules pass `node --check`; the local `server.exe` returns 200 on every endpoint.
 >
-> **Now active: Stage 1 — UI shell mock**.
+> **Now active: Stage 2 — Binary I/O primitives + RLE codec.**
 >
-> **Next concrete step**: build the 4-column main layout (Preview / Object list / ThingType Editor
-> / Sprite list) inside `<main id="app">` in `index.html`, styled by `style.css`, plus draggable
-> splitters. Implement splitter drag as a small jQuery module in `src/ui/splitter.js`
-> (mousedown on a 5 px handle, capture mousemove on `document`, release on mouseup). No data wired
-> in yet — that's the next sub-task.
+> **Next concrete step**: create `src/core/binary/BinaryReader.js` first. Wrap `DataView` with a
+> cursor + `readUint8/16/32`, `readInt8/16/32`, `readBytes(n)`, `bytesAvailable`,
+> `position` getter/setter. Then `BinaryWriter.js` mirroring it, backed by a growable `Uint8Array`.
+> Spin up `tests.html` at repo root and `tests/runner.js` (~50-line shim) to print PASS/FAIL.
+> Drive everything in the browser via the running `server.exe` — open
+> <http://127.0.0.1/tests.html>.
 >
 > Update this section the moment a sub-task closes.
 
@@ -137,20 +145,20 @@ objects so we can iterate on layout, drag-to-resize, panel toggles, theming.
 - Looks readable at the original AS3 minimum window of 800×600 and scales up.
 
 **Sub-tasks**
-- [ ] Build the 4-column layout in `index.html` markup, styled by `style.css`.
-- [ ] Draggable splitters between the four columns. Implement with jQuery (`mousedown`/`mousemove`
-      on a 5px-wide handle div, no jQuery UI dependency).
-- [ ] Mock data module `src/app/mockData.js` exporting 3 items, 1 outfit, 1 effect, 1 missile (each
-      a partial `ThingType`-shaped object).
-- [ ] Top toolbar (`src/ui/toolbar.js`) — buttons for New / Open / Compile / Save / etc. Port of
-      `Toolbar.as`. Buttons are stubs (`alert('TODO')`).
-- [ ] Top menu bar (`src/ui/menu.js`) — File / Edit / View / Tools / Window / Help with the same
-      items as `ob/menu/Menu.as`. Items are stubs.
-- [ ] ThingType Editor tabbed panel (`src/ui/editor/index.js`) — three tabs visible: **Texture**,
-      **Properties**, **Flags**. Inside each tab show static mock fields for now.
-- [ ] Hook up View menu → toggle panel visibility (jQuery `.toggle()`).
-- [ ] Theme: dark, mimicking the AS3 #494949 background. No light/dark toggle in MVP.
-- [ ] Quick a11y pass: labels, focus order, keyboard tabs.
+- [x] Build the 4-column layout in `src/ui/layout.js`, styled by `style.css`.
+- [x] Draggable splitters between the four columns — `src/ui/splitter.js`, jQuery
+      `mousedown`/`mousemove`/`mouseup`, no jQuery UI dependency. `data-edge="left|right"`,
+      `data-min` / `data-max` per handle.
+- [x] Mock data module `src/app/mockData.js` (3 items, 1 outfit, 1 effect, 1 missile +
+      `MOCK_CLIENT_INFO`).
+- [x] Top toolbar `src/ui/toolbar.js` with stubbed buttons.
+- [x] Top menu bar `src/ui/menu.js` with stubbed dropdowns; View items toggle the panels.
+- [x] ThingType editor `src/ui/panels/editorPanel.js` with three tabs (Texture / Properties /
+      Flags) and disabled mock fields.
+- [x] View menu → toggle panel visibility via `togglePanel()` in `src/ui/layout.js`.
+- [x] Dark `#494949` theme polish in `style.css`.
+- [ ] Deeper a11y pass (keyboard navigation across menus, focus rings, ARIA review). Deferred to
+      Stage 13 — current state has reasonable roles/`aria-*` but no end-to-end keyboard test.
 
 ---
 

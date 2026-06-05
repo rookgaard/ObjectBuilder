@@ -193,14 +193,15 @@ payload. This keeps the port mechanical.
 
 ### Running locally
 
-There is no `npm install` and no compile step. Any static-file server works:
+There is no `npm install` and no compile step. The project owner runs `server.exe` (lives in this
+folder, kept running between sessions) that serves the working tree at
+**<http://127.0.0.1/>** on port 80. Refresh the browser tab to pick up edits — there's no HMR.
 
-```
-python -m http.server 8000      # or:  npx serve .
-```
+Opening `index.html` via `file://` will NOT work because ES modules require an HTTP origin.
 
-Then open <http://localhost:8000/>. Opening `index.html` via `file://` will NOT work because ES
-modules require an HTTP origin.
+If you need to verify a change from inside the agent, just `curl http://127.0.0.1/<path>` — do
+**not** start `python -m http.server`, `npx serve`, or any other server: the owner already has one
+running and a second one would just collide on the port.
 
 ## Conventions for this port
 
@@ -253,7 +254,7 @@ signatures (user calls them 7.72) so the version dropdown shows what the user ex
 - [x] Identified `references/Tibia.dat` + `Tibia.spr` signatures (gen 3 / 7.55–7.72 band).
 - [x] Stage 0 — Static project scaffold (index.html + jQuery 4.0.0, style.css, src/ layout,
       public/versions.json, .editorconfig; smoke-tested via http.server).
-- [ ] Stage 1 — UI shell mock (no data).
+- [x] Stage 1 — UI shell mock (4-column layout, splitters, menu, toolbar, editor tabs, mock data).
 - [ ] Stage 2 — Binary I/O primitives + sprite RLE codec (testable in browser).
 - [ ] Stage 3 — Load Tibia 7.72 (`.dat` + `.spr`) end-to-end, read-only.
 - [ ] Stage 4 — Browse the four categories (lists + numeric stepper).

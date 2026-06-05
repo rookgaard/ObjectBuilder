@@ -1,0 +1,43 @@
+// Top toolbar — chunky buttons for the most common File-menu actions.
+
+import { STRINGS } from "./strings.js";
+
+const $ = window.jQuery;
+
+const BUTTONS = [
+    { id: "new",     label: "New",     glyph: "✚"  },
+    { id: "open",    label: "Open",    glyph: "📂" },
+    { id: "compile", label: "Compile", glyph: "⚙"  },
+    { id: "save",    label: "Save",    glyph: "💾" },
+    { sep: true },
+    { id: "find",    label: "Find",    glyph: "🔍" },
+    { id: "undo",    label: "Undo",    glyph: "↶"  },
+    { id: "redo",    label: "Redo",    glyph: "↷"  },
+];
+
+export function renderToolbar($host) {
+    const $bar = $('<ul class="toolbar" role="toolbar" aria-label="Main toolbar"></ul>');
+
+    BUTTONS.forEach((b) => {
+        if (b.sep) {
+            $bar.append('<li class="toolbar__sep" role="separator"></li>');
+            return;
+        }
+        const label = STRINGS.toolbar[b.id] || b.label;
+        $bar.append(`
+            <li>
+                <button type="button" class="toolbar__btn" data-cmd="toolbar.${b.id}" title="${label}">
+                    <span class="toolbar__glyph" aria-hidden="true">${b.glyph}</span>
+                    <span class="toolbar__label">${label}</span>
+                </button>
+            </li>
+        `);
+    });
+
+    $host.empty().append($bar);
+
+    $host.on("click", ".toolbar__btn", function () {
+        const cmd = $(this).data("cmd");
+        console.info(`[toolbar] TODO: command "${cmd}" is not wired up yet.`);
+    });
+}

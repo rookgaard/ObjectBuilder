@@ -1,17 +1,16 @@
 // src/app/main.js — entry module loaded by index.html as <script type=module>.
-// Wires the layers together; for Stage 0 it just proves every layer imports
-// cleanly and that jQuery is reachable.
+// Wires the layers together and boots the UI shell.
 
 import "../core/index.js";
 import "../formats/index.js";
 import "../store/index.js";
 import "../workers/index.js";
-import "../ui/index.js";
+import { bootUi } from "../ui/index.js";
 
 const $ = window.jQuery;
 if (!$) {
     throw new Error(
-        "jQuery did not load. Check the CDN <script> tag in index.html and " +
+        "jQuery did not load. Check the <script> tag in index.html and " +
         "make sure you are serving the site over http(s), not file://."
     );
 }
@@ -21,7 +20,9 @@ $(() => {
         `[ObjectBuilder-JS] boot complete — jQuery ${$.fn.jquery} ready`
     );
 
-    // Smoke-test that public/versions.json is reachable. Stage 1+ will
+    bootUi();
+
+    // Smoke-test that public/versions.json is reachable. Stage 3+ will
     // populate the version dropdown from this.
     $.getJSON("./public/versions.json")
         .done((versions) => {

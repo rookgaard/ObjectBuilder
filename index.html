@@ -16,14 +16,15 @@
 <body>
     <header class="app-header">
         <h1>ObjectBuilder-JS</h1>
-        <p class="app-header__sub">Browser port of Object Builder &middot; scaffold (Stage 0)</p>
+        <p class="app-header__sub">Loading…</p>
     </header>
 
-    <main id="app">
-        <p class="placeholder">
-            App boot pending. Open the browser console to verify all stub modules
-            loaded; you should see one log line per layer.
-        </p>
-    </main>
+    <nav class="app-menu" id="app-menu" aria-label="Main menu"></nav>
+
+    <div class="app-toolbar" id="app-toolbar"></div>
+
+    <main id="app" aria-label="Editor workspace"></main>
+
+    <footer class="app-status" role="status" aria-live="polite"></footer>
 </body>
 </html>
