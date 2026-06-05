@@ -29,31 +29,27 @@ These are decided. No need to re-ask the user.
 
 ## Current focus
 
-> **Stage 9 — DONE** (2026-06-05). File menu wired (Open / New / Compile / Compile As / Close):
-> - `src/ui/widgets/modal.js` — generic Promise-based modal with backdrop click + Esc.
-> - `src/ui/dialogs/openDialog.js` — picks `.dat` + `.spr` File objects + version dropdown +
->   extended/transparency/improvedAnimations toggles. Loads via `buildProject()`.
-> - `src/ui/dialogs/newDialog.js` — creates a blank project at the chosen version (minimal SPR
->   in memory with one empty sprite slot; per-category Maps with one `ThingType.create()`).
-> - `src/ui/dialogs/compileAsDialog.js` — base filename + version override; downloads both files.
-> - `src/ui/menu.js` File menu handlers: New / Open / Compile / Compile As / Close (Exit no-ops in
->   the browser). Wires status-bar feedback.
-> - `src/ui/toolbar.js` New / Open / Save → dialogs (Save behaves as Compile, matching AS3's
->   primary download path).
-> - Note: OBD single-object import/export is reshuffled out of Stage 9 (PLAN.md original) into
->   Stage 10 since it needs an LZMA dependency. The "Open / New" wiring lands here because
->   without it the app can't load user-provided files outside the dev reference button.
-> - Verified: 66 modules clean under `node --check`; new endpoints all 200.
+> **Stage 10 — DONE** (2026-06-05). All six DAT generations now port-complete:
+> - `src/formats/dat/MetadataFlags{1,2,4,5,6}.js` — flag byte tables for 7.10–7.30, 7.40–7.50,
+>   7.80–8.54, 8.55–9.86, 10.10–10.56 (gen-3 was already done in Stage 3).
+> - `src/formats/dat/MetadataReader{1,2,4,5,6}.js` — flag dispatch per generation. Gen-1/2
+>   override `readTexturePatterns` to force `patternZ = 1` and treat HAS_OFFSET as flag-only.
+>   Gen-5/6 add MARKET_ITEM with Latin-1 marketName. Gen-6 adds NO_MOVE_ANIMATION /
+>   DEFAULT_ACTION / USABLE.
+> - `src/formats/dat/MetadataWriter{1,2,4,5,6}.js` — paired writers with the same per-gen flag
+>   emission order as AS3 (else-if chains on placement flags).
+> - `src/formats/dat/{readerRegistry,writerRegistry}.js` — `pickReaderForVersion` /
+>   `pickWriterForVersion` resolve every band; no more "not implemented" stubs.
+> - Verified: 81 modules clean under `node --check`; the 7.72 byte-identical round-trip still
+>   passes after the registry rewire.
 >
-> **Now active: Stage 10 — OBD single-object import/export.**
+> **Now active: Stage 11 — Helper tools (Find, Slicer, Animation Editor, Look Generator).**
 >
-> **Next concrete step**: pick an LZMA codec. `lzma1` looks cleanest as an ESM import via
-> esm.sh: `import LZMA from "https://esm.sh/lzma1@1.0.10";` with promise-style API. Verify it
-> exposes synchronous compress/decompress over `Uint8Array`. Then `src/formats/obd/{ObdReader,ObdWriter}.js`
-> following `../ObjectBuilder-AS/OBD 2.0 Structure.txt`: u8 major + u8 minor + u16 client
-> version + u8 category, then `MetadataReader{N}.readProperties + readTexturePatterns`, then a
-> sprite-pixel block (4096 bytes ARGB each). Whole stream LZMA-compressed. Add Export/Import
-> buttons in the toolbar (Stage 8 left them as TODO).
+> **Next concrete step**: port **Find** first. A modal showing a category dropdown + a
+> property/value picker (boolean checkbox or numeric, depending on field type); on submit, walk
+> `listFor(dat, category)` and collect matches. Open from Tools → Find or toolbar 🔍.
+> Then **Slicer**: split a sprite-sheet PNG into 32×32 tiles via Canvas (drag-drop or file
+> input). Animation Editor + Look Generator can come later.
 >
 > Update this section the moment a sub-task closes.
 > - `src/store/projectStore.js` got `addThing(category, source?)`,

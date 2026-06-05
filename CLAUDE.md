@@ -269,8 +269,8 @@ signatures (user calls them 7.72) so the version dropdown shows what the user ex
 - [x] Stage 8 — add/duplicate/remove for ThingType + add/remove sprite with overlay; icon
       buttons + undo entries; round-trip preserved through SPR re-compile.
 - [x] Stage 9 — File menu wiring: Open / New / Compile / Compile As / Close dialogs.
-- [ ] Stage 10 — OBD single-object import/export (LZMA-compressed `.obd`).
-- [ ] Stage 11 — Support more version generations (7.10–7.50, 7.80+).
+- [x] Stage 10 — All six DAT generations ported (1/2/3/4/5/6 readers + writers + registries).
+- [ ] Stage 11 — Helper tools (Find, Slicer, Animation Editor, Look Generator).
 - [ ] Stage 11 — Helper tools (Find, Slicer, Animation Editor, Look Generator).
 - [ ] Stage 12 — Persistence (OPFS / localStorage).
 - [ ] Stage 13 — Polish (keyboard shortcuts, a11y, theming).
