@@ -17,7 +17,16 @@ export function writeProperties(w, t) {
     if (t.hasOffset) { w.writeUint8(F.HAS_OFFSET); w.writeInt16(t.offsetX);     w.writeInt16(t.offsetY); }
     if (t.animateAlways) w.writeUint8(F.ANIMATE_ALWAYS);
     if (t.topEffect && t.category === EFFECT) w.writeUint8(F.TOP_EFFECT);
+    if (t.hasBones) writeBones(w, t);
     w.writeUint8(F.LAST_FLAG);
+}
+
+function writeBones(w, t) {
+    w.writeUint8(F.HAS_BONES);
+    for (let d = 0; d < 4; d++) {
+        w.writeInt16(t.bonesOffsetX[d] | 0);
+        w.writeInt16(t.bonesOffsetY[d] | 0);
+    }
 }
 
 export function writeItemProperties(w, t) {
@@ -72,5 +81,6 @@ export function writeItemProperties(w, t) {
     if (t.wrappable)     w.writeUint8(F.WRAPPABLE);
     if (t.unwrappable)   w.writeUint8(F.UNWRAPPABLE);
     if (t.usable)        w.writeUint8(F.USABLE);
+    if (t.hasBones)      writeBones(w, t);
     w.writeUint8(F.LAST_FLAG);
 }

@@ -70,6 +70,15 @@ export function readProperties(reader, type) {
             case F.WRAPPABLE:         type.wrappable = true; break;
             case F.UNWRAPPABLE:       type.unwrappable = true; break;
             case F.TOP_EFFECT:        type.topEffect = true; break;
+            case F.HAS_BONES: {
+                type.hasBones = true;
+                // [N, S, E, W] x then y
+                for (let d = 0; d < 4; d++) {
+                    type.bonesOffsetX[d] = reader.readInt16();
+                    type.bonesOffsetY[d] = reader.readInt16();
+                }
+                break;
+            }
             case F.USABLE:            type.usable = true; break;
             default:
                 throw new Error(

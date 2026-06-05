@@ -41,6 +41,7 @@ export const F = Object.freeze({
     WRAPPABLE:         0x24,
     UNWRAPPABLE:       0x25,
     TOP_EFFECT:        0x26,
+    HAS_BONES:         0x27,
     USABLE:            0xFE,
     LAST_FLAG:         0xFF,
 });

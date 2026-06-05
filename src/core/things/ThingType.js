@@ -106,6 +106,12 @@ export class ThingType {
         this.topEffect = false;
         this.usable = false;
 
+        // Outfit bones — 4 directional (x,y) offsets, signed shorts.
+        // AS3 ref: builder4 ThingType.bonesOffsetX/Y[Direction.*].
+        this.hasBones = false;
+        this.bonesOffsetX = [0, 0, 0, 0]; // [N, S, E, W]
+        this.bonesOffsetY = [0, 0, 0, 0];
+
         // animation
         this.isAnimation = false;
         this.animationMode = 0;
@@ -177,6 +183,8 @@ export class ThingType {
         if (this.isAnimation && Array.isArray(this.frameDurations)) {
             copy.frameDurations = this.frameDurations.map((d) => d.clone());
         }
+        copy.bonesOffsetX = this.bonesOffsetX.slice();
+        copy.bonesOffsetY = this.bonesOffsetY.slice();
         return copy;
     }
 }
