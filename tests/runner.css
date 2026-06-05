@@ -1,0 +1,86 @@
+/* Test runner styles — sits on top of style.css. */
+
+.test-output {
+    padding: 16px;
+    overflow: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.test-summary {
+    padding: 8px 12px;
+    border-radius: 3px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: inline-block;
+}
+
+.test-summary.is-pass {
+    background: #1e5a1e;
+    color: #e6ffe6;
+}
+
+.test-summary.is-fail {
+    background: #5a1e1e;
+    color: #ffe6e6;
+}
+
+.test-suite {
+    margin: 0 0 14px;
+    background: #3f3f3f;
+    border: 1px solid #2a2a2a;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.test-suite h2 {
+    background: #353535;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: #d8d8d8;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.test-list {
+    padding: 6px 12px;
+}
+
+.test {
+    padding: 3px 0;
+    font-size: 12px;
+    color: #d0d0d0;
+    border-bottom: 1px solid #353535;
+}
+
+.test:last-child {
+    border-bottom: 0;
+}
+
+.test__mark {
+    display: inline-block;
+    width: 1.4em;
+    font-weight: 700;
+    text-align: center;
+}
+
+.test-pass .test__mark {
+    color: #7ec77e;
+}
+
+.test-fail {
+    color: #ffb0b0;
+}
+
+.test-fail .test__mark {
+    color: #ff7070;
+}
+
+.test__error {
+    margin: 4px 0 0 1.8em;
+    padding: 6px 8px;
+    background: #2c2c2c;
+    border-left: 3px solid #ff7070;
+    color: #ffd0d0;
+    font-size: 11px;
+    white-space: pre-wrap;
+}

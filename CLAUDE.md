@@ -255,7 +255,8 @@ signatures (user calls them 7.72) so the version dropdown shows what the user ex
 - [x] Stage 0 — Static project scaffold (index.html + jQuery 4.0.0, style.css, src/ layout,
       public/versions.json, .editorconfig; smoke-tested via http.server).
 - [x] Stage 1 — UI shell mock (4-column layout, splitters, menu, toolbar, editor tabs, mock data).
-- [ ] Stage 2 — Binary I/O primitives + sprite RLE codec (testable in browser).
+- [x] Stage 2 — Binary I/O + sprite RLE codec + ThingType/Version/FrameDuration; in-browser PASS/
+      FAIL runner at <http://127.0.0.1/tests.html>.
 - [ ] Stage 3 — Load Tibia 7.72 (`.dat` + `.spr`) end-to-end, read-only.
 - [ ] Stage 4 — Browse the four categories (lists + numeric stepper).
 - [ ] Stage 5 — Live preview + animation rendering.

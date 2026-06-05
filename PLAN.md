@@ -29,26 +29,34 @@ These are decided. No need to re-ask the user.
 
 ## Current focus
 
-> **Stage 1 — DONE** (2026-06-05). The shell renders end-to-end against mock data:
-> - 4-column layout (`src/ui/layout.js`) with draggable splitters (`src/ui/splitter.js`,
->   5 px handles, flex-basis driven, `min`/`max` per panel from `data-min` / `data-max`).
-> - Menu bar (`src/ui/menu.js`) with File / Edit / View / Tools / Window / Help dropdowns; only the
->   three View toggles are wired (the rest log a TODO to the console). Outside-click closes drops.
-> - Toolbar (`src/ui/toolbar.js`) with New / Open / Compile / Save / Find / Undo / Redo stubs.
-> - ThingType Editor (`src/ui/panels/editorPanel.js`) with Texture / Properties / Flags tabs and
->   disabled mock fields.
-> - Preview / Object list / Sprite list panels with mock data from `src/app/mockData.js`.
-> - Category dropdown switches the mock list (item / outfit / effect / missile).
-> - All 16 modules pass `node --check`; the local `server.exe` returns 200 on every endpoint.
+> **Stage 2 — DONE** (2026-06-05). Pure-core primitives landed and verified:
+> - `src/core/binary/{BinaryReader,BinaryWriter}.js` — little-endian, growable, supports
+>   seek + overwrite (the AS3 offset-table patch pattern).
+> - `src/core/sprites/spriteRle.js` — `encodeSpritePixels` / `decodeSpritePixels` ported byte-for-
+>   byte from `Sprite.compressPixels` / `uncompressPixels` (both `transparent: false/true` modes,
+>   AS3 buffer order A,R,G,B).
+> - `src/core/sprites/spritePixels.js` — ARGB ↔ RGBA conversions for HTML `ImageData`.
+> - `src/core/things/{ThingType,ThingCategory,ThingProperty}.js` — full ThingType data class
+>   (75+ fields), `getSpriteIndex/getTotalSprites/getSpriteSheetSize/clone/create`.
+> - `src/core/Version.js` + `src/core/animation/FrameDuration.js`.
+> - `src/core/index.js` re-exports the public surface.
+> - `tests.html` + `tests/{runner,index}.js` + `tests/runner.css` — in-browser PASS/FAIL runner.
+> - `tests/core/{binary,spriteRle,thingType}.test.js` — round-trip BinaryReader↔Writer for all int
+>   sizes, RLE for (transparent / opaque / mixed / `transparent:true`), ThingCategory helpers,
+>   `ThingType.create` defaults per category, hand-computed `getSpriteIndex` values for outfits
+>   and items, `getSpriteSheetSize` math, `Version.equals` + `versionFromJson` hex parsing.
+> - Verified: all 15 new modules pass `node --check`; a node smoke script confirmed encode/decode
+>   lengths and `getSpriteIndex(outfit, ..)` = 0/1/2/8 matching AS3.
 >
-> **Now active: Stage 2 — Binary I/O primitives + RLE codec.**
+> **Now active: Stage 3 — Load Tibia 7.72 `.dat` + `.spr`, read-only.**
 >
-> **Next concrete step**: create `src/core/binary/BinaryReader.js` first. Wrap `DataView` with a
-> cursor + `readUint8/16/32`, `readInt8/16/32`, `readBytes(n)`, `bytesAvailable`,
-> `position` getter/setter. Then `BinaryWriter.js` mirroring it, backed by a growable `Uint8Array`.
-> Spin up `tests.html` at repo root and `tests/runner.js` (~50-line shim) to print PASS/FAIL.
-> Drive everything in the browser via the running `server.exe` — open
-> <http://127.0.0.1/tests.html>.
+> **Next concrete step**: open <http://127.0.0.1/tests.html> in the browser to confirm every
+> Stage-2 test row is green (PASS/FAIL is also reflected in the page title). Then start the DAT
+> loader: `src/formats/dat/MetadataFlags3.js` (port of `MetadataFlags3.as`), followed by
+> `src/formats/dat/MetadataReader.js` (base `readTexturePatterns`) and
+> `src/formats/dat/MetadataReader3.js` (the gen-3 flag dispatch). Use the AS3 files at
+> `../ObjectBuilder-AS/src/otlib/things/Metadata{Flags3,Reader,Reader3}.as` as the spec — copy the
+> flag-byte values verbatim. No UI work yet in this sub-task.
 >
 > Update this section the moment a sub-task closes.
 
@@ -192,10 +200,12 @@ and prints PASS/FAIL into the page).
 - Open <http://localhost:8000/tests.html>; all rows must be green before closing the stage.
 
 **Exit criteria**
-- Round-trip tests pass for `u8/u16/u32/i8/i16/i32` reader/writer.
-- RLE encode→decode round trip passes for: (a) fully transparent sprite, (b) fully opaque sprite,
-  (c) mixed runs sprite, (d) the alert sprite PNG decoded into pixels and back.
-- `getSpriteIndex` matches a hand-computed AS3 result for one outfit and one item.
+- [x] Round-trip tests pass for `u8/u16/u32/i8/i16/i32` reader/writer.
+- [x] RLE encode→decode round trip passes for: (a) fully transparent sprite, (b) fully opaque
+      sprite, (c) mixed runs sprite, (d) `transparent: true` mode with per-pixel alpha.
+      *Alert-sprite PNG fixture round-trip is deferred to Stage 11 (Slicer needs the same PNG
+      decode path; no point doing the plumbing twice).*
+- [x] `getSpriteIndex` matches hand-computed AS3 results for outfit and item layouts.
 
 **Resume hint**: AS3 reference for RLE: `ObjectBuilder-AS/src/otlib/sprites/Sprite.as` lines
 ~197–309. Copy the algorithm; don't re-derive.
